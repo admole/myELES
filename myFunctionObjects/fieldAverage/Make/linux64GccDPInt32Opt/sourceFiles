@@ -1,0 +1,6 @@
+SOURCE = \
+fieldAverage.C \
+fieldAverageItem/fieldAverageItem.C \
+fieldAverageItem/fieldAverageItemIO.C \
+
+# sources

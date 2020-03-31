@@ -2,8 +2,8 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2011-2017 OpenFOAM Foundation
-     \\/     M anipulation  |
+    \\  /    A nd           | Copyright (C) 2015 OpenFOAM Foundation
+     \\/     M anipulation  | Copyright (C) 2015 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -25,34 +25,40 @@ Class
     Foam::fv::CorrectionForce
 
 Group
-    grpFvOptionsSources
+    grpFvOptionsConstraints
 
 Description
-    Calculates and applies the force necessary to maintain the specified mean
-    velocity.
+    Constraint for velocity to dampen velocity fluctuations in
+    steady simulations
 
-    Note: Currently only handles kinematic pressure (incompressible solvers).
+    In case of velocity exceeding limit applies
+    a source sink to remove the excess velocity by adding a term
+    that drives the velocity to 0 (note that we cannot use the old
+    term velocity since it most likely is already excessive). This
+    additional constraint is scaled with (U-UMax)/dt
+    where dt is a local time scale (= velocity/cellsize) so it switches off
+    if the velocity is below UMax.
 
-Usage
-    Example usage:
-    \verbatim
-    selectionMode   all;                    // Apply force to all cells
-    fields          (U);                    // Name of velocity field
-    Ubar            (10.0 0 0);             // Desired mean velocity
-    relaxation      0.2;                    // Optional relaxation factor
-    \endverbatim
+    Constraint described by:
+
+        CorrectionForceCoeffs
+        {
+            UMax        100;
+
+            // Optional: name of velocity field (default: U)
+            //U         U;
+            //UNames    (U);
+        }
+
 
 SourceFiles
     CorrectionForce.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef CORRECTIONFORCE_H
-#define CORRECTIONFORCE_H
+#ifndef CorrectionForce_H
+#define CorrectionForce_H
 
-#include "autoPtr.H"
-#include "fvMesh.H"
-#include "volFields.H"
 #include "cellSetOption.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -63,47 +69,25 @@ namespace fv
 {
 
 /*---------------------------------------------------------------------------*\
-               Class CorrectionForce Declaration
+                  Class CorrectionForce Declaration
 \*---------------------------------------------------------------------------*/
 
 class CorrectionForce
 :
     public cellSetOption
 {
+
 protected:
 
     // Protected data
 
-        //- Average velocity
-        vector Ubar_;
-
-        //- Pressure gradient before correction
-        scalar gradP0_;
-
-        //- Change in pressure gradient
-        scalar dGradP_;
-
-        //- Flow direction
-        vector flowDir_;
-
-        //- Relaxation factor
-        scalar relaxation_;
-
-        //- Matrix 1/A coefficients field pointer
-        autoPtr<volScalarField> rAPtr_;
+        //- Maximum velocity
+        scalar UMax_;
 
 
     // Protected Member Functions
 
-        //- Calculate and return the magnitude of the mean velocity
-        //  averaged over the selected cellSet
-        virtual scalar magUbarAve(const volVectorField& U) const;
-
-        //- Write the pressure gradient to file (for restarts etc)
-        void writeProps(const scalar gradP) const;
-
-        //- Correct driving force for a constant mass flow rate
-        void update(fvMatrix<vector>& eqn);
+        void addDamping(fvMatrix<vector>& eqn);
 
 
 private:
@@ -125,49 +109,34 @@ public:
 
     // Constructors
 
-        //- Construct from explicit source name and mesh
+        //- Construct from components
         CorrectionForce
         (
-            const word& sourceName,
+            const word& name,
             const word& modelType,
             const dictionary& dict,
             const fvMesh& mesh
         );
 
 
+    //- Destructor
+    virtual ~CorrectionForce() = default;
+
+
     // Member Functions
 
-        // Evaluate
+        // Set values directly
 
-            //- Correct the pressure gradient
-            virtual void correct(volVectorField& U);
-
-            //- Add explicit contribution to momentum equation
-            virtual void addSup
-            (
-                fvMatrix<vector>& eqn,
-                const label fieldi
-            );
-
-            //- Add explicit contribution to compressible momentum equation
-            virtual void addSup
-            (
-                const volScalarField& rho,
-                fvMatrix<vector>& eqn,
-                const label fieldi
-            );
-
-            //- Set 1/A coefficient
-            virtual void constrain
-            (
-                fvMatrix<vector>& eqn,
-                const label fieldi
-            );
+            //- Constrain vector matrix
+            virtual void constrain(fvMatrix<vector>& eqn, const label fieldi);
 
 
-        // IO
+        // I-O
 
-            //- Read source dictionary
+            //- Write data
+            virtual void writeData(Ostream& os) const;
+
+            //- Read dictionary
             virtual bool read(const dictionary& dict);
 };
 

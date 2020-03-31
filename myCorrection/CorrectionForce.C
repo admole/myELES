@@ -2,8 +2,8 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2011-2016 OpenFOAM Foundation
-     \\/     M anipulation  | Copyright (C) 2018 OpenCFD Ltd.
+    \\  /    A nd           | Copyright (C) 2015 OpenFOAM Foundation
+     \\/     M anipulation  | Copyright (C) 2015 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -24,19 +24,17 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "CorrectionForce.H"
-#include "fvMatrices.H"
-#include "DimensionedField.H"
-#include "IFstream.H"
 #include "addToRunTimeSelectionTable.H"
+#include "fvMatrix.H"
+#include "volFields.H"
 
-// * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
 namespace fv
 {
     defineTypeNameAndDebug(CorrectionForce, 0);
-
     addToRunTimeSelectionTable
     (
         option,
@@ -47,31 +45,41 @@ namespace fv
 }
 
 
-// * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-void Foam::fv::CorrectionForce::writeProps
-(
-    const scalar gradP
-) const
+void Foam::fv::CorrectionForce::addDamping(fvMatrix<vector>& eqn)
 {
-    // Only write on output time
-    if (mesh_.time().writeTime())
+    // Note: we want to add
+    //      deltaU/deltaT
+    // where deltaT is a local time scale:
+    //  U/(cbrt of volume)
+    // Since directly manipulating the diagonal we multiply by volume.
+
+    const scalarField& vol = mesh_.V();
+    const volVectorField& U = eqn.psi();
+    scalarField& diag = eqn.diag();
+
+    label nDamped = 0;
+
+    forAll(U, cellI)
     {
-        IOdictionary propsDict
-        (
-            IOobject
-            (
-                name_ + "Properties",
-                mesh_.time().timeName(),
-                "uniform",
-                mesh_,
-                IOobject::NO_READ,
-                IOobject::NO_WRITE
-            )
-        );
-        propsDict.add("gradient", gradP);
-        propsDict.regIOobject::write();
+        scalar magU = mag(U[cellI]);
+        if (magU > UMax_)
+        {
+            scalar scale = sqr(Foam::cbrt(vol[cellI]));
+
+            diag[cellI] += scale*(magU-UMax_);
+
+            ++nDamped;
+        }
     }
+
+    reduce(nDamped, sumOp<label>());
+
+    Info<< type() << " " << name_ << " damped "
+        << nDamped << " ("
+        << 100*scalar(nDamped)/mesh_.globalData().nTotalCells()
+        << "%) of cells" << endl;
 }
 
 
@@ -79,192 +87,52 @@ void Foam::fv::CorrectionForce::writeProps
 
 Foam::fv::CorrectionForce::CorrectionForce
 (
-    const word& sourceName,
+    const word& name,
     const word& modelType,
     const dictionary& dict,
     const fvMesh& mesh
 )
 :
-    cellSetOption(sourceName, modelType, dict, mesh),
-    Ubar_(coeffs_.get<vector>("Ubar")),
-    gradP0_(0.0),
-    dGradP_(0.0),
-    flowDir_(Ubar_/mag(Ubar_)),
-    relaxation_(coeffs_.lookupOrDefault<scalar>("relaxation", 1.0)),
-    rAPtr_(nullptr)
+    cellSetOption(name, modelType, dict, mesh)
 {
-    coeffs_.readEntry("fields", fieldNames_);
-
-    if (fieldNames_.size() != 1)
-    {
-        FatalErrorInFunction
-            << "settings are:" << fieldNames_ << exit(FatalError);
-    }
-
-    applied_.setSize(fieldNames_.size(), false);
-
-    // Read the initial pressure gradient from file if it exists
-    IFstream propsFile
-    (
-        mesh_.time().timePath()/"uniform"/(name_ + "Properties")
-    );
-
-    if (propsFile.good())
-    {
-        Info<< "    Reading pressure gradient from file" << endl;
-        dictionary propsDict(dictionary::null, propsFile);
-        propsDict.readEntry("gradient", gradP0_);
-    }
-
-    Info<< "    Initial pressure gradient = " << gradP0_ << nl << endl;
+    read(dict);
 }
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-Foam::scalar Foam::fv::CorrectionForce::magUbarAve
-(
-    const volVectorField& U
-) const
-{
-    scalar magUbarAve = 0.0;
-
-    const scalarField& cv = mesh_.V();
-    forAll(cells_, i)
-    {
-        label celli = cells_[i];
-        scalar volCell = cv[celli];
-        magUbarAve += (flowDir_ & U[celli])*volCell;
-    }
-
-    reduce(magUbarAve, sumOp<scalar>());
-
-    magUbarAve /= V_;
-
-    return magUbarAve;
-}
-
-
-void Foam::fv::CorrectionForce::correct(volVectorField& U)
-{
-    const scalarField& rAU = rAPtr_();
-
-    // Integrate flow variables over cell set
-    scalar rAUave = 0.0;
-    const scalarField& cv = mesh_.V();
-    forAll(cells_, i)
-    {
-        label celli = cells_[i];
-        scalar volCell = cv[celli];
-        rAUave += rAU[celli]*volCell;
-    }
-
-    // Collect across all processors
-    reduce(rAUave, sumOp<scalar>());
-
-    // Volume averages
-    rAUave /= V_;
-
-    scalar magUbarAve = this->magUbarAve(U);
-
-    // Calculate the pressure gradient increment needed to adjust the average
-    // flow-rate to the desired value
-    dGradP_ = relaxation_*(mag(Ubar_) - magUbarAve)/rAUave;
-
-    // Apply correction to velocity field
-    forAll(cells_, i)
-    {
-        label celli = cells_[i];
-        U[celli] += flowDir_*rAU[celli]*dGradP_;
-    }
-
-    U.correctBoundaryConditions();
-
-    scalar gradP = gradP0_ + dGradP_;
-
-    Info<< "Pressure gradient source: uncorrected Ubar = " << magUbarAve
-        << ", pressure gradient = " << gradP << endl;
-
-    writeProps(gradP);
-}
-
-
-void Foam::fv::CorrectionForce::addSup
-(
-    fvMatrix<vector>& eqn,
-    const label fieldi
-)
-{
-    volVectorField::Internal Su
-    (
-        IOobject
-        (
-            name_ + fieldNames_[fieldi] + "Sup",
-            mesh_.time().timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh_,
-        dimensionedVector(eqn.dimensions()/dimVolume, Zero)
-    );
-
-    scalar gradP = gradP0_ + dGradP_;
-
-    UIndirectList<vector>(Su, cells_) = flowDir_*gradP;
-
-    eqn += Su;
-}
-
-
-void Foam::fv::CorrectionForce::addSup
-(
-    const volScalarField& rho,
-    fvMatrix<vector>& eqn,
-    const label fieldi
-)
-{
-    this->addSup(eqn, fieldi);
-}
-
-
 void Foam::fv::CorrectionForce::constrain
 (
     fvMatrix<vector>& eqn,
-    const label
+    const label fieldi
 )
 {
-    if (rAPtr_.empty())
-    {
-        rAPtr_.reset
-        (
-            new volScalarField
-            (
-                IOobject
-                (
-                    name_ + ":rA",
-                    mesh_.time().timeName(),
-                    mesh_,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                1.0/eqn.A()
-            )
-        );
-    }
-    else
-    {
-        rAPtr_() = 1.0/eqn.A();
-    }
+    addDamping(eqn);
+}
 
-    gradP0_ += dGradP_;
-    dGradP_ = 0.0;
+
+void Foam::fv::CorrectionForce::writeData(Ostream& os) const
+{
+    dict_.writeEntry(name_, os);
 }
 
 
 bool Foam::fv::CorrectionForce::read(const dictionary& dict)
 {
-    NotImplemented;
+    if (cellSetOption::read(dict))
+    {
+        coeffs_.readEntry("UMax", UMax_);
+
+        if (!coeffs_.readIfPresent("UNames", fieldNames_))
+        {
+            fieldNames_.resize(1);
+            fieldNames_.first() = coeffs_.lookupOrDefault<word>("U", "U");
+        }
+
+        applied_.setSize(fieldNames_.size(), false);
+
+        return true;
+    }
 
     return false;
 }

@@ -1,0 +1,7 @@
+SEM/turbulentInletSEMFvPatchField.C
+SEMspot/SEMspot.C
+SEMBase/SEMBase.C
+
+LIB = $(FOAM_USER_LIBBIN)/libmySEM
+
+

@@ -1,1 +1,5 @@
 **/lnInclude
+**/Make/linux64*
+*.o
+*.dep
+.idea

@@ -64,23 +64,14 @@ void Foam::fv::CorrectionForce::addDamping(fvMatrix<vector>& eqn)
 
     const volVectorField U_les = mesh_.lookupObject<volVectorField>("U_LES");
 
-    label curTimeIndex = mesh_.time().timeIndex();
-    if(curTimeIndex > 10)
+    forAll(cells_, i)
     {
-        forAll(U, cellI)
-        {
-            //scalar magU = mag(U[cellI]);
-            // old used for removing small scales
-            // scalar scale = sqr(Foam::cbrt(vol[cellI]));
-            // diag[cellI] += scale*(magU-UMax_);
-
-            source[cellI] += 0.025 * (U_les[cellI] - U[cellI]);
-
-        }
-
-        Info<< type() << " " << name_ << " corrected U to LES Mean " << endl;
-
+        label celli = cells_[i];
+        source[celli] += 0.001 * (U_les[celli] - U[celli]);
     }
+
+    Info<< type() << " " << name_ << " corrected U to LES Mean " << endl;
+
 }
 
 

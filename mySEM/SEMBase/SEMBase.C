@@ -245,7 +245,7 @@ void SEMBase::initilise()
         maxDelta_[facei] = Foam::max(cellEdgeLengths);
     }
 
-    // set lengthscales
+    // set length-scales
     //scalar C=(isA<turbulentInletDFSEMFvPatchField>(*this)) ?  1.825742 : 1.0;
     scalar C = 1.0;
 

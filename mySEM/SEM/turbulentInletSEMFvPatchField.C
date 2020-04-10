@@ -169,10 +169,10 @@ void turbulentInletSEMFvPatchField::initiliseRun()
     SEMBase::initilise();
 
     //allocate spots
-    this->allocateSpots();
+    //this->allocateSpots();  // this appends more and more turbulent spots each timestep
 
     //set a_
-    //a_ = pTraits<tensor>::zero;
+    a_ = pTraits<tensor>::zero;
 
     forAll(*this, facei)
     {

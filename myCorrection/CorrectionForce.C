@@ -55,31 +55,32 @@ void Foam::fv::CorrectionForce::addDamping(fvMatrix<vector>& eqn)
     //  U/(cbrt of volume)
     // Since directly manipulating the diagonal we multiply by volume.
 
+
+    // access to velocity equation terms
     const scalarField& vol = mesh_.V();
     const volVectorField& U = eqn.psi();
     scalarField& diag = eqn.diag();
+    vectorField& source = eqn.source();
 
-    label nDamped = 0;
+    const volVectorField U_les = mesh_.lookupObject<volVectorField>("U_LES");
 
-    forAll(U, cellI)
+    label curTimeIndex = mesh_.time().timeIndex();
+    if(curTimeIndex > 10)
     {
-        scalar magU = mag(U[cellI]);
-        if (magU > UMax_)
+        forAll(U, cellI)
         {
-            scalar scale = sqr(Foam::cbrt(vol[cellI]));
+            //scalar magU = mag(U[cellI]);
+            // old used for removing small scales
+            // scalar scale = sqr(Foam::cbrt(vol[cellI]));
+            // diag[cellI] += scale*(magU-UMax_);
 
-            diag[cellI] += scale*(magU-UMax_);
+            source[cellI] += 0.025 * (U_les[cellI] - U[cellI]);
 
-            ++nDamped;
         }
+
+        Info<< type() << " " << name_ << " corrected U to LES Mean " << endl;
+
     }
-
-    reduce(nDamped, sumOp<label>());
-
-    Info<< type() << " " << name_ << " damped "
-        << nDamped << " ("
-        << 100*scalar(nDamped)/mesh_.globalData().nTotalCells()
-        << "%) of cells" << endl;
 }
 
 

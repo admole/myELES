@@ -57,18 +57,49 @@ void Foam::fv::CorrectionForce::addDamping(fvMatrix<vector>& eqn)
 
 
     // access to velocity equation terms
-    const scalarField& vol = mesh_.V();
+    // const scalarField& vol = mesh_.V();
     const volVectorField& U = eqn.psi();
-    scalarField& diag = eqn.diag();
+    // scalarField& diag = eqn.diag();
     vectorField& source = eqn.source();
 
-    const volVectorField U_les = mesh_.lookupObject<volVectorField>("U_LES");
+    //const dimensionedScalar& readNu = db().lookupObject<IOdictionary>("transportProperties").lookup("nu");
+
+    //const volVectorField U = mesh_.lookupObject<volVectorField>("U");
+    const volVectorField& U_les = mesh_.lookupObject<volVectorField>("U_LES");
+
+    const dimensionedScalar smallv("smallv", dimensionSet(0,1,-1,0,0,0,0), 1e-06);
+    const volVectorField flowDir_ = U_les / max(mag(U_les), smallv);         // should this be U or U_les (or combination)
+    const volVectorField position_ = mesh_.C();
+
+    const vector b_min(8.0,0.0,-1.57);       // TODO: replace with reading from dictionary
+    const vector b_max(12.0,2.0,1.57);
+    const vector b_size = b_max - b_min;
+    const scalar max_dist = std::max(std::max(b_size.x(), b_size.y()), b_size.z()); // better way of finding max of vector
+
 
     forAll(cells_, i)
     {
         label celli = cells_[i];
-        source[celli] += 0.001 * (U_les[celli] - U[celli]);
+
+        vector dist_normal(0.0, 0.0, 0.0);
+        vector dists(0.0, 0.0, 0.0);
+
+        for(int j=0; j<3; j++)
+        {
+            if (flowDir_[celli][j] > 0.0){ dist_normal[j] = b_max[j] - position_[celli][j];}
+            else                         { dist_normal[j] = position_[celli][j] - b_min[j];}
+
+                dists[j] = dist_normal[j]/max(flowDir_[celli][j], SMALL);
+        }
+
+        scalar dist = std::min(std::min(dists.x(), dists.y()), dists.z()); // better way of finding min of vector
+        scalar wi = 1 - dist / max(max_dist, SMALL);
+        // scalar relax2 = max(0.02*k/eps, dt)
+
+        source[celli] += wi * (U_les[celli] - U[celli]) / 1000; // divide by relaxation term
     }
+
+    // TODO: Do I need to update the boundary conditions here?
 
     Info<< type() << " " << name_ << " corrected U to LES Mean " << endl;
 

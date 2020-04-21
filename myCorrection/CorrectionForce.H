@@ -82,7 +82,8 @@ protected:
     // Protected data
 
         //- Maximum velocity
-        scalar UMax_;
+        vector b_max;
+        vector b_min;
 
 
     // Protected Member Functions

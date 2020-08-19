@@ -71,8 +71,6 @@ void Foam::fv::CorrectionForce::addDamping(fvMatrix<vector>& eqn)
     const volVectorField flowDir_ = U_les / max(mag(U_les), smallv);         // should this be U or U_les (or combination)
     const volVectorField position_ = mesh_.C();
 
-    //const vector b_min(10.0,0.0,-1.57);       // TODO: replace with reading from dictionary
-    //const vector b_max(12.0,2.0,1.57);
     const vector b_size = b_max - b_min;
     const scalar max_dist = std::max(std::max(b_size.x(), b_size.y()), b_size.z()); // better way of finding max of vector
 

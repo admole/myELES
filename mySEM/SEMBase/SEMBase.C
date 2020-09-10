@@ -213,6 +213,8 @@ void SEMBase::initilise()
         //
     }
 
+    Info<< "compute bulk velocity "
+        << endl;
     //compute bulk velocity of patch
     scalar patchTotArea( 0.0 );
     UBulk_ = 0.0;
@@ -246,6 +248,8 @@ void SEMBase::initilise()
     }
 
     // set length-scales
+    Info<< "Set Length-Scales "
+        << endl;
     //scalar C=(isA<turbulentInletDFSEMFvPatchField>(*this)) ?  1.825742 : 1.0;
     scalar C = 1.0;
 
@@ -266,7 +270,8 @@ void SEMBase::initilise()
         }
     }
 
-
+    Info<< "Set SEM box "
+        << endl;
     // set SEM box size
     forAll(*this, facei)
     {
@@ -282,7 +287,8 @@ void SEMBase::initilise()
     reduce( semBox_.min(), minOp<vector>() );
     reduce( semBox_.max(), maxOp<vector>() );
 
-
+    Info<< "Set Window "
+        << endl;
     //set averaging window size
     avgWindow_ = cmptMax( max(sigma_) )/mag(UBulk_) * 5.0;
     reduce( avgWindow_, maxOp<scalar>() );

@@ -208,7 +208,14 @@ void turbulentInletSEMFvPatchField::updateU()
     Info<< "SEM updating U "
         << endl;
 
-    this->initiliseRun();
+    if( this->db().time().value() == 0.0 )
+    {
+        this->initilise();
+    }
+    else
+    {
+        this->initiliseRun();
+    }
 
     Field<vector>& patchField = *this;
     const vectorField& fc = this->patch().Cf();
@@ -257,6 +264,9 @@ void turbulentInletSEMFvPatchField::updateU()
     }
 
     patchField += meanField_;
+
+    Info<< "SEM updated U "
+        << endl;
 
 }
 

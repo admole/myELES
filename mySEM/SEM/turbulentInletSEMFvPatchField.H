@@ -22,6 +22,7 @@ Reference. Accuracy and Efficiency Improvements in Synthetic Eddy Methods. A. Sk
 
 #include "Random.H"
 #include "SEMBase.H"
+#include "mixedFvPatchField.H"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -35,13 +36,16 @@ namespace Foam
 
 class turbulentInletSEMFvPatchField
 :
-    public SEMBase
+public SEMBase
+    mixedFvPatchField
 {
     // Protected data
 
 protected:
         Field<tensor> a_;
         Field<scalar> fMean2_;
+        //- Name of flux field
+        word phiName_;
 
 
 
@@ -119,6 +123,10 @@ protected:
         virtual void initiliseRun() ;
         virtual void allocateSpots();
         virtual void write(Ostream&) const;
+
+        // Member operators
+
+        virtual void operator=(const fvPatchField& pvf);
 
 private:
         scalar f( vector&, vector& );

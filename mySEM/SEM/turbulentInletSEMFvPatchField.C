@@ -36,10 +36,15 @@ turbulentInletSEMFvPatchField::turbulentInletSEMFvPatchField
     const DimensionedField<vector, volMesh>& iF
 )
 :
+    mixedFvPatchField(p, iF),
     SEMBase(p, iF),
     a_(p.size()),
     fMean2_(p.size())
+    phiName_("UIn")
 {
+    this->refValue() = Zero;
+    this->refGrad() = Zero;
+    this->valueFraction() = 0.0;
 }
 
 
@@ -52,9 +57,11 @@ turbulentInletSEMFvPatchField::turbulentInletSEMFvPatchField
     const fvPatchFieldMapper& mapper
 )
 :
+    mixedFvPatchField(ptf, p, iF, mapper),
     SEMBase(ptf, p, iF, mapper),
     a_(ptf.a_, mapper),
     fMean2_(ptf.fMean2_,mapper)
+    phiName_(ptf.phiName_)
 {
 }
 
@@ -67,9 +74,11 @@ turbulentInletSEMFvPatchField::turbulentInletSEMFvPatchField
     const dictionary& dict
 )
 :
+    mixedFvPatchField(p, iF),
     SEMBase(p, iF, dict),
     a_(p.size()),
     fMean2_(p.size())
+    phiName_(dict.lookupOrDefault<word>("UIn", "Uin"))
 {
     if (dict.found("fMean2"))
     {
@@ -79,6 +88,15 @@ turbulentInletSEMFvPatchField::turbulentInletSEMFvPatchField
     {
         fMean2_ = Field<scalar>(p.size(), 1.0);
     }
+
+    this->patchType() = dict.lookupOrDefault<word>("patchType", word::null);
+
+    this->refValue() = Field("inletValue", dict, p.size());
+
+    fvPatchField::operator=(this->refValue());
+
+    this->refGrad() = Zero;
+    this->valueFraction() = 0.0;
 
     this->initilise();
 }
@@ -90,9 +108,11 @@ turbulentInletSEMFvPatchField::turbulentInletSEMFvPatchField
     const turbulentInletSEMFvPatchField& ptf
 )
 :
+    mixedFvPatchField(ptf),
     SEMBase(ptf),
     a_(ptf.a_),
     fMean2_(ptf.fMean2_)
+    phiName_(ptf.phiName_)
 {
     for( int i=0; i<ptf.spot_.size(); i++ )
     {
@@ -108,9 +128,11 @@ turbulentInletSEMFvPatchField::turbulentInletSEMFvPatchField
     const DimensionedField<vector, volMesh>& iF
 )
 :
+    mixedFvPatchField(ptf, iF),
     SEMBase(ptf, iF),
     a_(ptf.a_),
     fMean2_(ptf.fMean2_)
+    phiName_(ptf.phiName_)
 {
     for( int i=0; i<ptf.spot_.size(); i++ )
     {
@@ -268,6 +290,18 @@ void turbulentInletSEMFvPatchField::updateU()
     Info<< "SEM updated U "
         << endl;
 
+
+    const Field<scalar>& phip =
+            this->patch().template lookupPatchField<surfaceScalarField, scalar>
+                    (
+                            phiName_
+                    );
+
+    this->valueFraction() = 1.0 - pos0(phip);
+
+    mixedFvPatchField::updateCoeffs();
+
+
 }
 
 
@@ -275,8 +309,10 @@ void turbulentInletSEMFvPatchField::write(Ostream& os) const
 {
     SEMBase::write(os);
     fMean2_.writeEntry("fMean2", os);
+    os.writeEntryIfDifferent<word>("phi", "phi", phiName_);
+    this->refValue().writeEntry("inletValue", os);
+    this->writeEntry("value", os);
 }
-    
 
 
 turbulentInletSEMFvPatchField::~turbulentInletSEMFvPatchField()
@@ -286,6 +322,22 @@ turbulentInletSEMFvPatchField::~turbulentInletSEMFvPatchField()
         delete spot_[i];
     }
 }
+
+// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
+
+template<class>
+void Foam::turbulentInletSEMFvPatchField::operator=
+        (
+                const fvPatchField& ptf
+        )
+{
+    fvPatchField::operator=
+            (
+                    this->valueFraction()*this->refValue()
+                    + (1 - this->valueFraction())*ptf
+            );
+}
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -434,7 +434,7 @@ void SEMBase::updateCoeffs()
         return;
     }
     
-    if (curTimeIndex_ != this->db().time().timeIndex())
+    if (curTimeIndex_ != this->db().time().timeIndex() && this->db().time().value() > 0.005)
     {
 
         this->advectPoints();            

@@ -39,7 +39,7 @@ SEMBase::SEMBase
     const DimensionedField<vector, volMesh>& iF
 )
 :
-    fixedValueFvPatchField<vector>(p, iF),
+    mixedFvPatchField<vector>(p, iF),
     UFieldName_(iF.name()),
     EpsFieldName_(iF.name()),
     RFieldName_(iF.name()),
@@ -51,8 +51,12 @@ SEMBase::SEMBase
     sigma_(p.size()),
     maxDelta_(p.size()),
     maxSigma_(0.1),
-    embedded_(0)
+    embedded_(0),
+    phiName_("UIn")
 {
+    this->refValue() = Zero;
+    this->refGrad() = Zero;
+    this->valueFraction() = 0.0;
 }
 
 
@@ -65,7 +69,7 @@ SEMBase::SEMBase
     const fvPatchFieldMapper& mapper
 )
 :
-    fixedValueFvPatchField<vector>(ptf, p, iF, mapper),
+    mixedFvPatchField<vector>(ptf, p, iF, mapper),
     UFieldName_(iF.name()),
     EpsFieldName_(iF.name()),
     RFieldName_(iF.name()),
@@ -79,7 +83,8 @@ SEMBase::SEMBase
     maxDelta_(ptf.maxDelta_, mapper),
     maxSigma_(ptf.maxSigma_),
     embedded_(ptf.embedded_),
-    avgWindow_(ptf.avgWindow_)
+    avgWindow_(ptf.avgWindow_),
+    phiName_(ptf.phiName_)
 {
 }
 
@@ -92,7 +97,7 @@ SEMBase::SEMBase
     const dictionary& dict
 )
 :
-    fixedValueFvPatchField<vector>(p, iF),
+    mixedFvPatchField<vector>(p, iF),
     UFieldName_(dict.lookup("UFieldName")),
     EpsFieldName_(dict.lookup("EpsFieldName")),
     RFieldName_(dict.lookup("RFieldName")),
@@ -108,10 +113,30 @@ SEMBase::SEMBase
     sigma_(p.size()),
     embedded_(dict.lookupOrDefault("embedded", true)),
     maxDelta_(p.size()),
-    maxSigma_(dict.lookupOrDefault<scalar>("maxSigma", GREAT))
+    maxSigma_(dict.lookupOrDefault<scalar>("maxSigma", GREAT)),
+    phiName_(dict.lookupOrDefault<word>("UIn", "Uin"))
 
 {
-    fixedValueFvPatchField<vector>::operator==(vector(0.0, 0.0, 0.0));
+
+    this->patchType() = dict.lookupOrDefault<word>("patchType", word::null);
+
+    this->refValue() = Field<vector>("inletValue", dict, p.size());
+
+    if (dict.found("value"))
+    {
+        fvPatchField<vector>::operator=
+                (
+                        Field<vector>("value", dict, p.size())
+                );
+    }
+    else
+    {
+        fvPatchField<vector>::operator=(this->refValue());
+    }
+
+    this->refGrad() = Zero;
+    this->valueFraction() = 0.0;
+
 
     meanField_ = Field<vector>("UIn", dict, p.size());
     RIn_ = Field<symmTensor>("RIn", dict, p.size());
@@ -126,7 +151,7 @@ SEMBase::SEMBase
     const SEMBase& ptf
 )
 :
-    fixedValueFvPatchField<vector>(ptf),
+    mixedFvPatchField<vector>(ptf),
     UFieldName_(ptf.UFieldName_),
     EpsFieldName_(ptf.EpsFieldName_),
     RFieldName_(ptf.RFieldName_),
@@ -141,7 +166,8 @@ SEMBase::SEMBase
     maxDelta_(ptf.maxDelta_),
     maxSigma_(ptf.maxSigma_),
     spot_(ptf.spot_), 
-    avgWindow_(ptf.avgWindow_)
+    avgWindow_(ptf.avgWindow_),
+    phiName_(ptf.phiName_)
 {
 }
 
@@ -153,7 +179,7 @@ SEMBase::SEMBase
     const DimensionedField<vector, volMesh>& iF
 )
 :
-    fixedValueFvPatchField<vector>(ptf, iF),
+    mixedFvPatchField<vector>(ptf, iF),
     UFieldName_(ptf.UFieldName_),
     EpsFieldName_(ptf.EpsFieldName_),
     RFieldName_(ptf.RFieldName_),
@@ -168,7 +194,8 @@ SEMBase::SEMBase
     embedded_(ptf.embedded_),
     maxDelta_(ptf.maxDelta_),
     maxSigma_(ptf.maxSigma_),
-    avgWindow_(ptf.avgWindow_)
+    avgWindow_(ptf.avgWindow_),
+    phiName_(ptf.phiName_)
 {
 }
 
@@ -177,7 +204,7 @@ SEMBase::SEMBase
 void SEMBase::initilise()
 {
 
-    fixedValueFvPatchField<vector>::operator==(vector(0.0, 0.0, 0.0));
+// FvPatchField<vector>::operator==(vector(0.0, 0.0, 0.0));
 
     if( embedded_ )
     {
@@ -343,7 +370,7 @@ void SEMBase::autoMap
     const fvPatchFieldMapper& m
 )
 {
-    fixedValueFvPatchField<vector>::autoMap(m);
+    mixedFvPatchField<vector>::autoMap(m);
     meanField_.autoMap(m);
     RIn_.autoMap(m);
     epsIn_.autoMap(m);
@@ -358,7 +385,7 @@ void SEMBase::rmap
     const labelList& addr
 )
 {
-    fixedValueFvPatchField<vector>::rmap(ptf, addr);
+    mixedFvPatchField<vector>::rmap(ptf, addr);
 
     const SEMBase& tiptf =
         refCast<const SEMBase >(ptf);
@@ -441,12 +468,20 @@ void SEMBase::updateCoeffs()
    
         this->updateU(); 
         
-        this->correctMass(); 
-        
+        this->correctMass();
+
+        const Field<scalar>& phip =
+                this->patch().template lookupPatchField<surfaceVectorField, vector>
+                        (
+                                phiName_
+                        ) & mesh.Sf().boundaryField()[patchLabel];
+
+        this->valueFraction() = 1.0 - pos0(phip);
+
         curTimeIndex_ = this->db().time().timeIndex();
     }
 
-    fixedValueFvPatchField<vector>::updateCoeffs();
+    mixedFvPatchField<vector>::updateCoeffs();
 
 }
 
@@ -463,6 +498,8 @@ void SEMBase::write(Ostream& os) const
     os.writeKeyword("UFieldName") << UFieldName_ << token::END_STATEMENT << nl;
     os.writeKeyword("EpsFieldName") << EpsFieldName_ << token::END_STATEMENT << nl;
     os.writeKeyword("RFieldName") << RFieldName_ << token::END_STATEMENT << nl;
+    os.writeEntryIfDifferent<word>("phi", "phi", phiName_);
+    this->refValue().writeEntry("inletValue", os);
 
     this->writeEntry("value", os);
 
@@ -471,6 +508,25 @@ void SEMBase::write(Ostream& os) const
     //epsIn_.writeEntry("epsIn", os);
     //sigma_.writeEntry("sigma", os);
 }
+
+// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
+
+    // template<class Type>
+    void SEMBase<vector>::operator=
+            (
+                    const fvPatchField<vector>& ptf
+            )
+    {
+        fvPatchField<vector>::operator=
+                (
+                        this->valueFraction()*this->refValue()
+                        + (1 - this->valueFraction())*ptf
+                );
+    }
+
+
+// ************************************************************************* //
+
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -52,7 +52,7 @@ SEMBase::SEMBase
     maxDelta_(p.size()),
     maxSigma_(0.1),
     embedded_(0),
-    phiName_("UIn")
+    phiName_("phi")
 {
     this->refValue() = Zero;
     this->refGrad() = Zero;
@@ -114,7 +114,7 @@ SEMBase::SEMBase
     embedded_(dict.lookupOrDefault("embedded", true)),
     maxDelta_(p.size()),
     maxSigma_(dict.lookupOrDefault<scalar>("maxSigma", GREAT)),
-    phiName_(dict.lookupOrDefault<word>("UIn", "Uin"))
+    phiName_(dict.lookupOrDefault<word>("phi", "phi"))
 
 {
 
@@ -222,9 +222,7 @@ void SEMBase::initilise()
             const volSymmTensorField &Rin = db().objectRegistry::lookupObject<volSymmTensorField>("RIn");
 
             meanField_ = Uin.boundaryField()[patchId]; //->internalField();
-
             epsIn_ = Epsin.boundaryField()[patchId]; //->internalField();
-
             RIn_ = Rin.boundaryField()[patchId]; //->internalField();
 
             Info<< "SEM Reading from RANS "
@@ -470,11 +468,11 @@ void SEMBase::updateCoeffs()
         
         this->correctMass();
 
-        const Field<scalar>& phip =
-                this->patch().template lookupPatchField<surfaceVectorField, vector>
-                        (
-                                phiName_
-                        ) & mesh.Sf().boundaryField()[patchLabel];
+        label patchIndex = this->patch().index();
+        //const label patchId = mesh.boundaryMesh().findPatchID("INLET");
+
+        const surfaceScalarField & phi = this->db().objectRegistry::lookupObject<surfaceScalarField>(phiName_);
+        const scalarField & phip = phi.boundaryField()[patchIndex];
 
         this->valueFraction() = 1.0 - pos0(phip);
 
@@ -512,7 +510,8 @@ void SEMBase::write(Ostream& os) const
 // * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
 
     // template<class Type>
-    void SEMBase<vector>::operator=
+
+    void SEMBase::operator=
             (
                     const fvPatchField<vector>& ptf
             )

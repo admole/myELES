@@ -23,6 +23,7 @@ Reference. Accuracy and Efficiency Improvements in Synthetic Eddy Methods. A. Sk
 
 #include "Random.H"
 #include "mixedFvPatchFields.H"
+#include "surfaceFields.H"
 #include "primitivePatchInterpolation.H"
 
 

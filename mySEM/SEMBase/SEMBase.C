@@ -474,7 +474,7 @@ void SEMBase::updateCoeffs()
         const surfaceScalarField & phi = this->db().objectRegistry::lookupObject<surfaceScalarField>(phiName_);
         const scalarField & phip = phi.boundaryField()[patchIndex];
 
-        this->valueFraction() = 1.0 - pos0(phip);
+        this->valueFraction() = 1.0 - pos0(meanField_ & this->patch().nf());
 
         curTimeIndex_ = this->db().time().timeIndex();
     }

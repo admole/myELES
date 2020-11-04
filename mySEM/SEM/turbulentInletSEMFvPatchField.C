@@ -221,7 +221,7 @@ void turbulentInletSEMFvPatchField::updateU()
     const vectorField& fc = this->patch().Cf();
 
     Field<vector> fluctuatingField( this->size() );
-    
+
     patchField = vector( 0.0, 0.0, 0.0 );
     fluctuatingField = vector( 0.0, 0.0, 0.0 );
 
@@ -264,6 +264,8 @@ void turbulentInletSEMFvPatchField::updateU()
     }
 
     patchField += meanField_;
+
+    this->refValue() = patchField;
 
     Info<< "SEM updated U "
         << endl;

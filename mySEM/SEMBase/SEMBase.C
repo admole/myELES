@@ -471,8 +471,8 @@ void SEMBase::updateCoeffs()
         label patchIndex = this->patch().index();
         //const label patchId = mesh.boundaryMesh().findPatchID("INLET");
 
-        const surfaceScalarField & phi = this->db().objectRegistry::lookupObject<surfaceScalarField>(phiName_);
-        const scalarField & phip = phi.boundaryField()[patchIndex];
+        //const surfaceScalarField & phi = this->db().objectRegistry::lookupObject<surfaceScalarField>(phiName_);
+        //const scalarField & phip = phi.boundaryField()[patchIndex];
 
         this->valueFraction() = 1.0 - pos0((meanField_ & this->patch().nf()) / mag(meanField_ & this->patch().nf()));
 

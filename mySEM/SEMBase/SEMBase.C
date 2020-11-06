@@ -469,7 +469,7 @@ void SEMBase::updateCoeffs()
         this->correctMass();
 
         label patchIndex = this->patch().index();
-        const label patchId = mesh.boundaryMesh().findPatchID("INLET");
+        //const label patchId = mesh.boundaryMesh().findPatchID("INLET");
 
         const surfaceScalarField & phi = this->db().objectRegistry::lookupObject<surfaceScalarField>(phiName_);
         const scalarField & phip = phi.boundaryField()[patchIndex];

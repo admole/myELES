@@ -475,7 +475,7 @@ void SEMBase::updateCoeffs()
         //const scalarField & phip = phi.boundaryField()[patchIndex];
 
         //this->valueFraction() = 1.0 - pos0(phip);
-        this->valueFraction() = 1.0 - pos0((this->refValue() & this->patch().nf()) / mag(this->refValue() & this->patch().nf()));
+        this->valueFraction() = 1.0 - pos0((meanField_ & this->patch().nf()) / mag(meanField_ & this->patch().nf()));
 
         curTimeIndex_ = this->db().time().timeIndex();
     }

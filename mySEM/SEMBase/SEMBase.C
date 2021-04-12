@@ -138,10 +138,63 @@ SEMBase::SEMBase
     this->valueFraction() = 0.0;
 
 
-    meanField_ = Field<vector>("UIn", dict, p.size());
-    RIn_ = Field<symmTensor>("RIn", dict, p.size());
-    epsIn_ = Field<scalar>("epsIn", dict, p.size());
+//    meanField_ = Field<vector>("UIn", dict, p.size());
+//    RIn_ = Field<symmTensor>("RIn", dict, p.size());
+//    epsIn_ = Field<scalar>("epsIn", dict, p.size());
     //sigma_ = Field<vector>("sigma", dict, p.size());
+
+    const fvMesh& mesh_(this->patch().boundaryMesh().mesh());
+
+    const volVectorField Uin
+            (
+                    IOobject
+                            (
+                                    UFieldName_,
+                                    mesh_.time().timeName(),
+                                    mesh_,
+                                    IOobject::MUST_READ,
+                                    IOobject::AUTO_WRITE,
+                                    true // registery
+                            ),
+                    mesh_
+            );
+
+    const volSymmTensorField Rin
+            (
+                    IOobject
+                            (
+                                    RFieldName_,
+                                    mesh_.time().timeName(),
+                                    mesh_,
+                                    IOobject::MUST_READ,
+                                    IOobject::AUTO_WRITE,
+                                    true // registery
+                            ),
+                    mesh_
+            );
+
+    const volScalarField Epsin
+            (
+                    IOobject
+                            (
+                                    EpsFieldName_,
+                                    mesh_.time().timeName(),
+                                    mesh_,
+                                    IOobject::MUST_READ,
+                                    IOobject::AUTO_WRITE,
+                                    true // registery
+                            ),
+                    mesh_
+            );
+
+
+    const label patchId = mesh_.boundaryMesh().findPatchID("INLET");
+
+    meanField_ = Uin.boundaryField()[patchId]; //->internalField();
+    epsIn_ = Epsin.boundaryField()[patchId]; //->internalField();
+    RIn_ = Rin.boundaryField()[patchId]; //->internalField();
+
+
 }
 
 
@@ -217,9 +270,9 @@ void SEMBase::initilise()
             //const fvMesh& mesh = dimensionedInternalField().mesh();
             const fvMesh &mesh = patch().boundaryMesh().mesh();
             const label patchId = mesh.boundaryMesh().findPatchID("INLET");
-            const volVectorField &Uin = db().objectRegistry::lookupObject<volVectorField>("UIn");   // TODO: change from UIn to UFieldName
-            const volScalarField &Epsin = db().objectRegistry::lookupObject<volScalarField>("epsIn");
-            const volSymmTensorField &Rin = db().objectRegistry::lookupObject<volSymmTensorField>("RIn");
+            const volVectorField &Uin = db().objectRegistry::lookupObject<volVectorField>(UFieldName_);  
+            const volScalarField &Epsin = db().objectRegistry::lookupObject<volScalarField>(EpsFieldName_);
+            const volSymmTensorField &Rin = db().objectRegistry::lookupObject<volSymmTensorField>(RFieldName_);
 
             meanField_ = Uin.boundaryField()[patchId]; //->internalField();
             epsIn_ = Epsin.boundaryField()[patchId]; //->internalField();

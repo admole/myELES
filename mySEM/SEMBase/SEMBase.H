@@ -47,11 +47,13 @@ class SEMBase
 
 protected:
         word UFieldName_;
+        word UGradFieldName_;
         word EpsFieldName_;
         word RFieldName_;
         Random ranGen_;
         Field<vector> meanField_;
-        label curTimeIndex_; 
+        Field<vector> UGradIn_;
+        label curTimeIndex_;
         boundBox semBox_;
         scalar UBulk_;
         Field<symmTensor> RIn_;
@@ -118,6 +120,11 @@ public:
             Field<vector>& meanField()
             {
                 return meanField_;
+            }
+
+            Field<vector>& UGradIn()
+            {
+                return UGradIn_;
             }
 
             Field<vector>& sigma()

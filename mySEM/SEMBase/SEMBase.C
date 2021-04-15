@@ -41,10 +41,12 @@ SEMBase::SEMBase
 :
     mixedFvPatchField<vector>(p, iF),
     UFieldName_(iF.name()),
+    UGradFieldName_(iF.name()),
     EpsFieldName_(iF.name()),
     RFieldName_(iF.name()),
     ranGen_(label(0)),
     meanField_(p.size()),
+    UGradIn_(p.size()),
     curTimeIndex_(-1),
     RIn_(p.size()),
     epsIn_(p.size()),
@@ -71,10 +73,12 @@ SEMBase::SEMBase
 :
     mixedFvPatchField<vector>(ptf, p, iF, mapper),
     UFieldName_(iF.name()),
+    UGradFieldName_(iF.name()),
     EpsFieldName_(iF.name()),
     RFieldName_(iF.name()),
     ranGen_(label(0)),
     meanField_(ptf.meanField_, mapper),
+    UGradIn_(ptf.UGradIn_, mapper),
     curTimeIndex_(-1),
     semBox_(ptf.semBox_),
     RIn_(ptf.RIn_, mapper),
@@ -99,10 +103,12 @@ SEMBase::SEMBase
 :
     mixedFvPatchField<vector>(p, iF),
     UFieldName_(dict.lookup("UFieldName")),
+    UGradFieldName_(dict.lookup("UGradFieldName")),
     EpsFieldName_(dict.lookup("EpsFieldName")),
     RFieldName_(dict.lookup("RFieldName")),
     ranGen_(label(0)),
     meanField_(p.size()),
+    UGradIn_(p.size()),
     //meanField_(this->db().lookupObject<volVectorField>("UIn")),
     curTimeIndex_(-1),
     semBox_(p.Cf()), 
@@ -159,6 +165,20 @@ SEMBase::SEMBase
                     mesh_
             );
 
+    const volVectorField UGradin
+            (
+                    IOobject
+                            (
+                                    UGradFieldName_,
+                                    mesh_.time().timeName(),
+                                    mesh_,
+                                    IOobject::MUST_READ,
+                                    IOobject::AUTO_WRITE,
+                                    true // registery
+                            ),
+                    mesh_
+            );
+
     const volSymmTensorField Rin
             (
                     IOobject
@@ -191,6 +211,7 @@ SEMBase::SEMBase
     const label patchId = mesh_.boundaryMesh().findPatchID("INLET");
 
     meanField_ = Uin.boundaryField()[patchId]; //->internalField();
+    UGradIn_ = UGradin.boundaryField()[patchId].snGrad(); //->internalField();
     epsIn_ = Epsin.boundaryField()[patchId]; //->internalField();
     RIn_ = Rin.boundaryField()[patchId]; //->internalField();
 
@@ -206,10 +227,12 @@ SEMBase::SEMBase
 :
     mixedFvPatchField<vector>(ptf),
     UFieldName_(ptf.UFieldName_),
+    UGradFieldName_(ptf.UFieldName_),
     EpsFieldName_(ptf.EpsFieldName_),
     RFieldName_(ptf.RFieldName_),
     ranGen_(ptf.ranGen_),
     meanField_(ptf.meanField_),
+    UGradIn_(ptf.UGradIn_),
     curTimeIndex_(-1),
     semBox_(ptf.semBox_), 
     RIn_(ptf.RIn_),
@@ -234,10 +257,12 @@ SEMBase::SEMBase
 :
     mixedFvPatchField<vector>(ptf, iF),
     UFieldName_(ptf.UFieldName_),
+    UGradFieldName_(ptf.UFieldName_),
     EpsFieldName_(ptf.EpsFieldName_),
     RFieldName_(ptf.RFieldName_),
     ranGen_(ptf.ranGen_),
     meanField_(ptf.meanField_),
+    UGradIn_(ptf.UGradIn_),
     curTimeIndex_(ptf.curTimeIndex_),
     semBox_(ptf.semBox_),
     UBulk_(ptf.UBulk_),
@@ -270,11 +295,13 @@ void SEMBase::initilise()
             //const fvMesh& mesh = dimensionedInternalField().mesh();
             const fvMesh &mesh = patch().boundaryMesh().mesh();
             const label patchId = mesh.boundaryMesh().findPatchID("INLET");
-            const volVectorField &Uin = db().objectRegistry::lookupObject<volVectorField>(UFieldName_);  
+            const volVectorField &Uin = db().objectRegistry::lookupObject<volVectorField>(UFieldName_);
+            const volVectorField &UGradin = db().objectRegistry::lookupObject<volVectorField>(UGradFieldName_);
             const volScalarField &Epsin = db().objectRegistry::lookupObject<volScalarField>(EpsFieldName_);
             const volSymmTensorField &Rin = db().objectRegistry::lookupObject<volSymmTensorField>(RFieldName_);
 
             meanField_ = Uin.boundaryField()[patchId]; //->internalField();
+            UGradIn_ = UGradin.boundaryField()[patchId].snGrad(); //->internalField();
             epsIn_ = Epsin.boundaryField()[patchId]; //->internalField();
             RIn_ = Rin.boundaryField()[patchId]; //->internalField();
 
@@ -423,6 +450,7 @@ void SEMBase::autoMap
 {
     mixedFvPatchField<vector>::autoMap(m);
     meanField_.autoMap(m);
+    UGradIn_.autoMap(m);
     RIn_.autoMap(m);
     epsIn_.autoMap(m);
     //sigma_.autoMap(m);
@@ -442,6 +470,7 @@ void SEMBase::rmap
         refCast<const SEMBase >(ptf);
 
     meanField_.rmap(tiptf.meanField_, addr);
+    UGradIn_.rmap(tiptf.UGradIn_, addr);
     RIn_.rmap(tiptf.RIn_, addr);
     epsIn_.rmap(tiptf.epsIn_, addr);
     //sigma_.rmap(tiptf.sigma_, addr);
@@ -512,7 +541,7 @@ void SEMBase::updateCoeffs()
         return;
     }
     
-    if (curTimeIndex_ != this->db().time().timeIndex() && this->db().time().value() > 0.005)
+    if (curTimeIndex_ != this->db().time().timeIndex() && this->db().time().value() > 0.005) // TODO: set to timestep
     {
 
         this->advectPoints();            
@@ -523,6 +552,8 @@ void SEMBase::updateCoeffs()
 
         label patchIndex = this->patch().index();
         //const label patchId = mesh.boundaryMesh().findPatchID("INLET");
+
+        this->refGrad() = UGradIn_;
 
         const surfaceScalarField & phi = this->db().objectRegistry::lookupObject<surfaceScalarField>(phiName_);
         const scalarField & phip = phi.boundaryField()[patchIndex];
@@ -548,6 +579,7 @@ void SEMBase::write(Ostream& os) const
     os.writeKeyword("embedded") << embedded_ << token::END_STATEMENT << nl;
     os.writeKeyword("maxSigma") << maxSigma_ << token::END_STATEMENT << nl;
     os.writeKeyword("UFieldName") << UFieldName_ << token::END_STATEMENT << nl;
+    os.writeKeyword("UGradFieldName") << UGradFieldName_ << token::END_STATEMENT << nl;
     os.writeKeyword("EpsFieldName") << EpsFieldName_ << token::END_STATEMENT << nl;
     os.writeKeyword("RFieldName") << RFieldName_ << token::END_STATEMENT << nl;
     os.writeEntryIfDifferent<word>("phi", "phi", phiName_);

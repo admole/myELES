@@ -70,7 +70,8 @@ SourceFiles
 #ifndef outletInletReadFvPatchField_H
 #define outletInletReadFvPatchField_H
 
-#include "mixedFvPatchField.H"
+#include "fvPatchFields.H"
+#include "mixedFvPatchFields.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -81,10 +82,9 @@ namespace Foam
                      Class outletInletReadFvPatch Declaration
 \*---------------------------------------------------------------------------*/
 
-template<class Type>
-class outletInletReadFvPatchField
+class outletInletReadFvPatchScalarField
 :
-    public mixedFvPatchField<Type>
+    public mixedFvPatchScalarField
 {
 
 protected:
@@ -93,6 +93,10 @@ protected:
 
         //- Name of flux field
         word phiName_;
+        word FieldName_;
+        word GradFieldName_;
+        Field<scalar> valueField_;
+        Field<scalar> gradField_;
 
 
 public:
@@ -104,65 +108,87 @@ public:
     // Constructors
 
         //- Construct from patch and internal field
-        outletInletReadFvPatchField
+        outletInletReadFvPatchScalarField
         (
             const fvPatch&,
-            const DimensionedField<Type, volMesh>&
+            const DimensionedField<scalar, volMesh>&
         );
 
         //- Construct from patch, internal field and dictionary
-        outletInletReadFvPatchField
+        outletInletReadFvPatchScalarField
         (
             const fvPatch&,
-            const DimensionedField<Type, volMesh>&,
+            const DimensionedField<scalar, volMesh>&,
             const dictionary&
         );
 
         //- Construct by mapping given outletInletReadFvPatchField onto a new patch
-        outletInletReadFvPatchField
+        outletInletReadFvPatchScalarField
         (
-            const outletInletReadFvPatchField<Type>&,
+            const outletInletReadFvPatchScalarField&,
             const fvPatch&,
-            const DimensionedField<Type, volMesh>&,
+            const DimensionedField<scalar, volMesh>&,
             const fvPatchFieldMapper&
         );
 
         //- Construct as copy
-        outletInletReadFvPatchField
+        outletInletReadFvPatchScalarField
         (
-            const outletInletReadFvPatchField<Type>&
+            const outletInletReadFvPatchScalarField&
         );
 
         //- Construct and return a clone
-        virtual tmp<fvPatchField<Type>> clone() const
+        virtual tmp<fvPatchScalarField> clone() const
         {
-            return tmp<fvPatchField<Type>>
+            return tmp<fvPatchScalarField>
             (
-                new outletInletReadFvPatchField<Type>(*this)
+                new outletInletReadFvPatchScalarField(*this)
             );
         }
 
         //- Construct as copy setting internal field reference
-        outletInletReadFvPatchField
+        outletInletReadFvPatchScalarField
         (
-            const outletInletReadFvPatchField<Type>&,
-            const DimensionedField<Type, volMesh>&
+            const outletInletReadFvPatchScalarField&,
+            const DimensionedField<scalar, volMesh>&
         );
 
         //- Construct and return a clone setting internal field reference
-        virtual tmp<fvPatchField<Type>> clone
+        virtual tmp<fvPatchScalarField> clone
         (
-            const DimensionedField<Type, volMesh>& iF
+            const DimensionedField<scalar, volMesh>& iF
         ) const
         {
-            return tmp<fvPatchField<Type>>
+            return tmp<fvPatchScalarField>
             (
-                new outletInletReadFvPatchField<Type>(*this, iF)
+                new outletInletReadFvPatchScalarField(*this, iF)
             );
         }
 
 
     // Member functions
+
+        const scalarField& valueField() const
+        {
+            return valueField_;
+        }
+
+        const scalarField& gradField() const
+        {
+            return gradField_;
+        }
+
+        scalarField& valueField()
+        {
+            return valueField_;
+        }
+
+        scalarField& gradField()
+        {
+            return gradField_;
+        }
+
+        // Evaluation functions
 
         //- Update the coefficients associated with the patch field
         virtual void updateCoeffs();
@@ -175,12 +201,6 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#ifdef NoRepository
-    #include "outletInletReadFvPatchField.C"
-#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

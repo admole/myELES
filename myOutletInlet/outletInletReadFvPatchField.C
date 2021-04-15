@@ -23,125 +23,213 @@ License
 
 \*---------------------------------------------------------------------------*/
 
+#include "volFields.H"
+#include "fvPatchFieldMapper.H"
+#include "surfaceFields.H"
 #include "outletInletReadFvPatchField.H"
+#include "addToRunTimeSelectionTable.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-template<class Type>
-Foam::outletInletReadFvPatchField<Type>::outletInletReadFvPatchField
+outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
 (
     const fvPatch& p,
-    const DimensionedField<Type, volMesh>& iF
+    const DimensionedField<scalar, volMesh>& iF
 )
 :
-    mixedFvPatchField<Type>(p, iF),
-    phiName_("phi")
+    mixedFvPatchScalarField(p, iF),
+    phiName_("phi"),
+    FieldName_("pIn"),
+    GradFieldName_("pGradIn"),
+    valueField_(p.size()),
+    gradField_(p.size())
 {
-    this->refValue() = *this;
-    this->refGrad() = Zero;
-    this->valueFraction() = 0.0;
+//    this->refValue() = *this;
+//    this->refGrad() = Zero;
+//    this->valueFraction() = 0.0;
 }
 
 
-template<class Type>
-Foam::outletInletReadFvPatchField<Type>::outletInletReadFvPatchField
+outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
 (
-    const outletInletReadFvPatchField<Type>& ptf,
+    const outletInletReadFvPatchScalarField& ptf,
     const fvPatch& p,
-    const DimensionedField<Type, volMesh>& iF,
+    const DimensionedField<scalar, volMesh>& iF,
     const fvPatchFieldMapper& mapper
 )
 :
-    mixedFvPatchField<Type>(ptf, p, iF, mapper),
-    phiName_(ptf.phiName_)
+    mixedFvPatchScalarField(ptf, p, iF, mapper),
+    phiName_(ptf.phiName_),
+    FieldName_(ptf.FieldName_),
+    GradFieldName_(ptf.GradFieldName_),
+    valueField_(ptf.valueField_, mapper),
+    gradField_(ptf.gradField_, mapper)
 {}
 
 
-template<class Type>
-Foam::outletInletReadFvPatchField<Type>::outletInletReadFvPatchField
+outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
 (
     const fvPatch& p,
-    const DimensionedField<Type, volMesh>& iF,
+    const DimensionedField<scalar, volMesh>& iF,
     const dictionary& dict
 )
 :
-    mixedFvPatchField<Type>(p, iF),
-    phiName_(dict.lookupOrDefault<word>("phi", "phi"))
+    mixedFvPatchScalarField(p, iF),
+    phiName_(dict.lookupOrDefault<word>("phi", "phi")),
+    FieldName_(dict.lookupOrDefault<word>("FieldName", "pIn")),
+    GradFieldName_(dict.lookupOrDefault<word>("GradFieldName", "pGradIn")),
+    valueField_(p.size()),
+    gradField_(p.size())
 {
-    this->patchType() = dict.lookupOrDefault<word>("patchType", word::null);
+    //patchType() = dict.lookupOrDefault<word>("patchType", word::null);
 
-    this->refValue() = Field<Type>("outletValue", dict, p.size());
+    const fvMesh& mesh_(patch().boundaryMesh().mesh());
+
+    const volScalarField valuein
+            (
+                    IOobject
+                            (
+                                    FieldName_,
+                                    mesh_.time().timeName(),
+                                    mesh_,
+                                    IOobject::MUST_READ,
+                                    IOobject::AUTO_WRITE,
+                                    true // registery
+                            ),
+                    mesh_
+            );
+
+    const volScalarField gradin
+            (
+                    IOobject
+                            (
+                                    GradFieldName_,
+                                    mesh_.time().timeName(),
+                                    mesh_,
+                                    IOobject::MUST_READ,
+                                    IOobject::AUTO_WRITE,
+                                    true // registery
+                            ),
+                    mesh_
+            );
+
+    const label patchId = mesh_.boundaryMesh().findPatchID("INLET");  // TODO: set as this patch name
+
+    valueField_ = valuein.boundaryField()[patchId]; //->internalField();
+    gradField_ = gradin.boundaryField()[patchId].snGrad(); //->internalField();
+
+    refValue() = Field<scalar>("outletValue", dict, p.size());
 
     if (dict.found("value"))
     {
-        fvPatchField<Type>::operator=
-        (
-            Field<Type>("value", dict, p.size())
-        );
+        fvPatchScalarField::operator=
+                (
+                        scalarField("value", dict, p.size())
+                );
     }
     else
     {
-        fvPatchField<Type>::operator=(this->refValue());
+        fvPatchScalarField::operator=(refValue());
     }
 
-    this->refGrad() = Zero;
-    this->valueFraction() = 0.0;
+    refGrad() = Zero;
+    valueFraction() = 0.0;
 }
 
 
-template<class Type>
-Foam::outletInletReadFvPatchField<Type>::outletInletReadFvPatchField
+outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
 (
-    const outletInletReadFvPatchField<Type>& ptf
+    const outletInletReadFvPatchScalarField& ptf
 )
 :
-    mixedFvPatchField<Type>(ptf),
-    phiName_(ptf.phiName_)
+    mixedFvPatchScalarField(ptf),
+    phiName_(ptf.phiName_),
+    FieldName_(ptf.FieldName_),
+    GradFieldName_(ptf.GradFieldName_),
+    valueField_(ptf.valueField_),
+    gradField_(ptf.gradField_)
 {}
 
 
-template<class Type>
-Foam::outletInletReadFvPatchField<Type>::outletInletReadFvPatchField
+outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
 (
-    const outletInletReadFvPatchField<Type>& ptf,
-    const DimensionedField<Type, volMesh>& iF
+    const outletInletReadFvPatchScalarField& ptf,
+    const DimensionedField<scalar, volMesh>& iF
 )
 :
-    mixedFvPatchField<Type>(ptf, iF),
-    phiName_(ptf.phiName_)
+    mixedFvPatchScalarField(ptf, iF),
+    phiName_(ptf.phiName_),
+    FieldName_(ptf.FieldName_),
+    GradFieldName_(ptf.GradFieldName_),
+    valueField_(ptf.valueField_),
+    gradField_(ptf.gradField_)
 {}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-template<class Type>
-void Foam::outletInletReadFvPatchField<Type>::updateCoeffs()
+void outletInletReadFvPatchScalarField::updateCoeffs()
 {
-    if (this->updated())
+    if (updated())
     {
         return;
     }
 
+    const fvMesh &mesh = patch().boundaryMesh().mesh();
+    const label patchId = mesh.boundaryMesh().findPatchID("INLET");
+    const volScalarField &valuein = db().objectRegistry::lookupObject<volScalarField>(FieldName_);
+    const volScalarField &gradin = db().objectRegistry::lookupObject<volScalarField>(GradFieldName_);
+
+    valueField_ = valuein.boundaryField()[patchId]; //->internalField();
+    gradField_ = gradin.boundaryField()[patchId].snGrad(); //->internalField();
+
+
+    Info<< "outletInlet Reading from RANS "
+        << endl;
+
     const Field<scalar>& phip =
-        this->patch().template lookupPatchField<surfaceScalarField, scalar>
+        patch().template lookupPatchField<surfaceScalarField, scalar>
         (
             phiName_
         );
 
-    this->valueFraction() = pos0(phip);
+    valueFraction() = pos0(phip);
+    refGrad() = gradField_;
+    refValue() = valueField_;
 
-    mixedFvPatchField<Type>::updateCoeffs();
+
+    mixedFvPatchField<scalar>::updateCoeffs();
 }
 
 
-template<class Type>
-void Foam::outletInletReadFvPatchField<Type>::write(Ostream& os) const
+void outletInletReadFvPatchScalarField::write(Ostream& os) const
 {
-    fvPatchField<Type>::write(os);
+    fvPatchScalarField::write(os);
     os.writeEntryIfDifferent<word>("phi", "phi", phiName_);
-    this->refValue().writeEntry("outletValue", os);
-    this->writeEntry("value", os);
+    refValue().writeEntry("outletValue", os);
+    writeEntry("value", os);
 }
 
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+        makePatchTypeField
+        (
+                fvPatchScalarField,
+                outletInletReadFvPatchScalarField
+        );
+
+// ************************************************************************* //
+
+
+} // End namespace Foam
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // ************************************************************************* //

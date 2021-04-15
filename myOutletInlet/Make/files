@@ -1,4 +1,4 @@
-outletInletReadFvPatchFields.C
+outletInletReadFvPatchField.C
 
 LIB = $(FOAM_USER_LIBBIN)/libmyOutletInlet
 

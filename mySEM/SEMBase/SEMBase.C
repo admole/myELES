@@ -208,7 +208,7 @@ SEMBase::SEMBase
             );
 
 
-    const label patchId = mesh_.boundaryMesh().findPatchID("INLET");
+    const label patchId = mesh_.boundaryMesh().findPatchID(this->patch().name());
 
     meanField_ = Uin.boundaryField()[patchId]; //->internalField();
     UGradIn_ = UGradin.boundaryField()[patchId].snGrad(); //->internalField();
@@ -294,7 +294,7 @@ void SEMBase::initilise()
         {
             //const fvMesh& mesh = dimensionedInternalField().mesh();
             const fvMesh &mesh = patch().boundaryMesh().mesh();
-            const label patchId = mesh.boundaryMesh().findPatchID("INLET");
+            const label patchId = mesh.boundaryMesh().findPatchID(this->patch().name());
             const volVectorField &Uin = db().objectRegistry::lookupObject<volVectorField>(UFieldName_);
             const volVectorField &UGradin = db().objectRegistry::lookupObject<volVectorField>(UGradFieldName_);
             const volScalarField &Epsin = db().objectRegistry::lookupObject<volScalarField>(EpsFieldName_);
@@ -551,7 +551,7 @@ void SEMBase::updateCoeffs()
         this->correctMass();
 
         label patchIndex = this->patch().index();
-        //const label patchId = mesh.boundaryMesh().findPatchID("INLET");
+        //const label patchId = mesh.boundaryMesh().findPatchID(this->patch().name());
 
         this->refGrad() = UGradIn_;
 

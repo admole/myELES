@@ -118,7 +118,7 @@ outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
                     mesh_
             );
 
-    const label patchId = mesh_.boundaryMesh().findPatchID("INLET");  // TODO: set as this patch name
+    const label patchId = mesh_.boundaryMesh().findPatchID(this->patch().name());
 
     valueField_ = valuein.boundaryField()[patchId]; //->internalField();
     gradField_ = gradin.boundaryField()[patchId].snGrad(); //->internalField();
@@ -181,7 +181,7 @@ void outletInletReadFvPatchScalarField::updateCoeffs()
     }
 
     const fvMesh &mesh = patch().boundaryMesh().mesh();
-    const label patchId = mesh.boundaryMesh().findPatchID("INLET");
+    const label patchId = mesh.boundaryMesh().findPatchID(this->patch().name());
     const volScalarField &valuein = db().objectRegistry::lookupObject<volScalarField>(FieldName_);
     const volScalarField &gradin = db().objectRegistry::lookupObject<volScalarField>(GradFieldName_);
 

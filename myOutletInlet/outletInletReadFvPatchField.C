@@ -192,13 +192,14 @@ void outletInletReadFvPatchScalarField::updateCoeffs()
     Info<< "outletInlet Reading from RANS "
         << endl;
 
-    const Field<scalar>& phip =
-        patch().template lookupPatchField<surfaceScalarField, scalar>
+    const Field<vector>& velField_ =
+        patch().template lookupPatchField<volVectorField, vector>
         (
-            phiName_
+            "UIn"
         );
 
-    valueFraction() = pos0(phip);
+    //valueFraction() = pos0(phip);
+    valueFraction() = pos0(velField_ & this->patch().nf());
     refGrad() = gradField_;
     refValue() = valueField_;
 

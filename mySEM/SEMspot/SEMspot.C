@@ -153,21 +153,21 @@ void SEMspot::interpolatePatchToSpot()
     reduce( patchTotArea, sumOp<scalar>() );
 
     UB /= max( patchTotArea, SMALL);
-   
-    //u_ = UB;
-    u_ = pf_->meanField()[localNearest[Pstream::myProcNo()]];
 
     
     if( donorProcN_ != Pstream::myProcNo() )
     {
-         sigma_ = pTraits<vector>::zero;
+        sigma_ = pTraits<vector>::zero;
+        u_ = pTraits<vector>::zero;
     }
     else
     {
         sigma_ = pf_->sigma()[nearest_];
+        u_ = pf_->meanField()[nearest_];
     }
  
     reduce( sigma_, maxOp<vector>() );
+    reduce( u_, maxOp<vector>() );
 
 }
 

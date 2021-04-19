@@ -154,7 +154,8 @@ void SEMspot::interpolatePatchToSpot()
 
     UB /= max( patchTotArea, SMALL);
    
-    u_ = UB;
+    //u_ = UB;
+    u_ = pf_->meanField()[localNearest[Pstream::myProcNo()]];
 
     
     if( donorProcN_ != Pstream::myProcNo() )

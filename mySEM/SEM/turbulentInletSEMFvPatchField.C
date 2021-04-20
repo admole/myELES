@@ -79,8 +79,6 @@ turbulentInletSEMFvPatchField::turbulentInletSEMFvPatchField
     {
         fMean2_ = Field<scalar>(p.size(), 1.0);
     }
-
-    this->initilise();
 }
 
 
@@ -141,9 +139,14 @@ void turbulentInletSEMFvPatchField::initilise()
 
     SEMBase::initilise();
 
+    Info<< "Allocating turbulence spots"
+        << endl;
     //allocate spots
     this->allocateSpots();
 
+
+    Info<< "Calculate Cholskey decomposition "
+        << endl;
     //set a_
     a_ = pTraits<tensor>::zero;
 
@@ -208,7 +211,7 @@ void turbulentInletSEMFvPatchField::updateU()
     Info<< "SEM updating U "
         << endl;
 
-    if( this->db().time().value() == 0.0 )
+    if( this->db().time().value() <= this->db().time().deltaTValue() )
     {
         this->initilise();
     }

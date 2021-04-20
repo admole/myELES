@@ -290,8 +290,6 @@ void SEMBase::initilise()
         Info<< "Embedded SEM "
             << endl;
 
-        if( this->db().time().value() != 0.0 )
-        {
             //const fvMesh& mesh = dimensionedInternalField().mesh();
             const fvMesh &mesh = patch().boundaryMesh().mesh();
             const label patchId = mesh.boundaryMesh().findPatchID(this->patch().name());
@@ -307,11 +305,6 @@ void SEMBase::initilise()
 
             Info<< "SEM Reading from RANS "
                 << endl;
-        }
-        else
-        {
-           //
-        }
     }
     else
     {
@@ -397,6 +390,9 @@ void SEMBase::initilise()
     //set averaging window size
     avgWindow_ = cmptMax( max(sigma_) )/mag(UBulk_) * 5.0;
     reduce( avgWindow_, maxOp<scalar>() );
+
+    Info<< "SEMBase initialised "
+        << endl;
 }
 
 int SEMBase::numEddies()
@@ -541,7 +537,7 @@ void SEMBase::updateCoeffs()
         return;
     }
     
-    if (curTimeIndex_ != this->db().time().timeIndex() && this->db().time().value() > 0.005) // TODO: set to timestep
+    if (curTimeIndex_ != this->db().time().timeIndex() && this->db().time().value() > this->db().time().deltaTValue())
     {
 
         this->advectPoints();            

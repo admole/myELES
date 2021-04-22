@@ -395,7 +395,7 @@ void SEMBase::initilise()
     Info<< "Set Window "
         << endl;
     //set averaging window size
-    avgWindow_ = cmptMax( max(sigma_) )/mag(UBulk_) * 5.0;
+    avgWindow_ = cmptMax( max(sigma_) )/mag(UBulk_+SMALL) * 5.0;
     reduce( avgWindow_, maxOp<scalar>() );
 }
 

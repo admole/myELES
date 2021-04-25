@@ -394,9 +394,17 @@ void SEMBase::initilise()
 
     Info<< "Set Window "
         << endl;
+
     //set averaging window size
-    avgWindow_ = cmptMax( max(sigma_) )/mag(UBulk_+SMALL) * 5.0;
+    avgWindow_ = cmptMax( max(sigma_) ) / (mag(UBulk_) + SMALL) * 5.0;
+
+    Info<< "Reducing window "
+        << endl;
+
     reduce( avgWindow_, maxOp<scalar>() );
+    
+    Info<< "Window Set "
+        << endl;
 }
 
 int SEMBase::numEddies()

@@ -84,6 +84,7 @@ protected:
         //- Maximum velocity
         vector b_max;
         vector b_min;
+        scalar Qramp;
 
 
     // Protected Member Functions

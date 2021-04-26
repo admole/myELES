@@ -49,12 +49,6 @@ namespace fv
 
 void Foam::fv::CorrectionForce::addDamping(fvMatrix<vector>& eqn)
 {
-    // Note: we want to add
-    //      deltaU/deltaT
-    // where deltaT is a local time scale:
-    //  U/(cbrt of volume)
-    // Since directly manipulating the diagonal we multiply by volume.
-
 
     // access to velocity equation terms
     // const scalarField& vol = mesh_.V();
@@ -72,7 +66,9 @@ void Foam::fv::CorrectionForce::addDamping(fvMatrix<vector>& eqn)
     const volVectorField position_ = mesh_.C();
 
     const vector b_size = b_max - b_min;
-    const scalar max_dist = std::max(std::max(b_size.x(), b_size.y()), b_size.z()); // better way of finding max of vector
+    const scalar max_dist = mag(b_size);
+    const scalar dt_ = 0.1; //runTime_.deltaTValue();
+
 
 
     forAll(cells_, i)
@@ -84,20 +80,41 @@ void Foam::fv::CorrectionForce::addDamping(fvMatrix<vector>& eqn)
 
         for(int j=0; j<3; j++)
         {
-            if (flowDir_[celli][j] > 0.0){ dist_normal[j] = b_max[j] - position_[celli][j];}
-            else                         { dist_normal[j] = position_[celli][j] - b_min[j];}
+            if (flowDir_[celli][j] > 0.0)
+            {
+                dist_normal[j] = b_max[j] - position_[celli][j];
+                dists[j] = dist_normal[j]/flowDir_[celli][j];
+            }
+            else if (flowDir_[celli][j] < 0.0)
+            {
+                dist_normal[j] = position_[celli][j] - b_min[j];
+                dists[j] = dist_normal[j]/flowDir_[celli][j];
+            }
+            else if ((flowDir_[celli][0] > 0.0) && (flowDir_[celli][1] > 0.0) && (flowDir_[celli][2] > 0.0))
+            {
+                dist_normal[j] = min(b_max[j] - position_[celli][j], position_[celli][j] - b_min[j]);
+                dists[j] = dist_normal[j];
+            }
+            else
+            {
+                dists[j] = max_dist;
+            }
 
-                dists[j] = dist_normal[j]/max(flowDir_[celli][j], SMALL);
+            // dists[j] = dist_normal[j]/max(flowDir_[celli][j], SMALL);
         }
 
-        scalar dist = std::min(std::min(dists.x(), dists.y()), dists.z()); // better way of finding min of vector
-        scalar wi = 1 - dist / max(max_dist, SMALL);
-        // scalar relax2 = max(0.02*k/eps, dt)
+        scalar dist = cmptMin(cmptMag(dists));
+        scalar norm_dist = dist / max_dist;
+        scalar wi = 1 - norm_dist;
+        // scalar timescale = max(0.02*k/eps, dt);
+        // scalar timescale = 1.0;
+        scalar timescale = dt_;
 
-        source[celli] += wi * (U_les[celli] - U[celli]) / 1000; // divide by relaxation term
+        source[celli] += wi * (U_les[celli] - U[celli]) / timescale;
     }
 
-    // TODO: Do I need to update the boundary conditions here?
+    // eqn.correctBoundaryConditions();
+
 
     Info<< type() << " " << name_ << " corrected U to LES Mean " << endl;
 
@@ -144,6 +161,7 @@ bool Foam::fv::CorrectionForce::read(const dictionary& dict)
     {
         coeffs_.readEntry("bMin", b_min);
         coeffs_.readEntry("bMax", b_max);
+        coeffs_.readEntry("Qramp", Qramp);
 
         if (!coeffs_.readIfPresent("UNames", fieldNames_))
         {

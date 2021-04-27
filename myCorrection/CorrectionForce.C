@@ -92,7 +92,7 @@ void Foam::fv::CorrectionForce::drift(fvMatrix<vector>& eqn)
                 dist_normal[j] = position_[celli][j] - b_min[j];
                 dists[j] = dist_normal[j]/flowDir_[celli][j];
             }
-            else if ((flowDir_[celli][0] > 0.0) && (flowDir_[celli][1] > 0.0) && (flowDir_[celli][2] > 0.0))
+            else if ((flowDir_[celli][0] == 0.0) && (flowDir_[celli][1] == 0.0) && (flowDir_[celli][2] == 0.0))
             {
                 dist_normal[j] = min(b_max[j] - position_[celli][j], position_[celli][j] - b_min[j]);
                 dists[j] = dist_normal[j];

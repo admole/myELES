@@ -89,7 +89,7 @@ protected:
 
     // Protected Member Functions
 
-        void addDamping(fvMatrix<vector>& eqn);
+        void drift(fvMatrix<vector>& eqn);
 
 
 private:
@@ -130,7 +130,7 @@ public:
         // Set values directly
 
             //- Constrain vector matrix
-            virtual void constrain(fvMatrix<vector>& eqn, const label fieldi);
+            virtual void addSup(fvMatrix<vector>& eqn, const label fieldi);
 
 
         // I-O

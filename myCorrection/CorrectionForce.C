@@ -47,11 +47,11 @@ namespace fv
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-void Foam::fv::CorrectionForce::addDamping(fvMatrix<vector>& eqn)
+void Foam::fv::CorrectionForce::drift(fvMatrix<vector>& eqn)
 {
 
     // access to velocity equation terms
-    // const scalarField& vol = mesh_.V();
+    const scalarField& vol = mesh_.V();
     const volVectorField& U = eqn.psi();
     // scalarField& diag = eqn.diag();
     vectorField& source = eqn.source();
@@ -60,6 +60,8 @@ void Foam::fv::CorrectionForce::addDamping(fvMatrix<vector>& eqn)
 
     //const volVectorField U = mesh_.lookupObject<volVectorField>("U");
     const volVectorField& U_les = mesh_.lookupObject<volVectorField>("U_LES");
+    const volScalarField& k_ = mesh_.lookupObject<volScalarField>("turbulenceProperties:k");
+    const volScalarField& eps_ = mesh_.lookupObject<volScalarField>("turbulenceProperties:epsilon");
 
     const dimensionedScalar smallv("smallv", dimensionSet(0,1,-1,0,0,0,0), 1e-06);
     const volVectorField flowDir_ = U_les / max(mag(U_les), smallv);         // should this be U or U_les (or combination)
@@ -106,11 +108,18 @@ void Foam::fv::CorrectionForce::addDamping(fvMatrix<vector>& eqn)
         scalar dist = cmptMin(cmptMag(dists));
         scalar norm_dist = dist / max_dist;
         scalar wi = 1 - norm_dist;
-        // scalar timescale = max(0.02*k/eps, dt);
+        scalar timescale = max(0.1*k_[celli]/eps_[celli], dt_);
         // scalar timescale = 1.0;
-        scalar timescale = dt_;
+        // scalar timescale = dt_;
+        vector drift = wi * (U_les[celli] - U[celli]) / (timescale) * vol[celli];
+        source[celli] += drift;
 
-        source[celli] += wi * (U_les[celli] - U[celli]) / timescale;
+        Info<< type() << "Drifting: cell: " << celli
+                      << " U: " << U[celli]
+                      << " U_les: " << U_les[celli]
+                      << " with f: " << drift
+                      << endl;
+
     }
 
     // eqn.correctBoundaryConditions();
@@ -139,13 +148,13 @@ Foam::fv::CorrectionForce::CorrectionForce
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::fv::CorrectionForce::constrain
+void Foam::fv::CorrectionForce::addSup
 (
     fvMatrix<vector>& eqn,
     const label fieldi
 )
 {
-    addDamping(eqn);
+    drift(eqn);
 }
 
 

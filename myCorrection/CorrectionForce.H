@@ -85,6 +85,7 @@ protected:
         vector b_max;
         vector b_min;
         scalar Qramp;
+        scalar C1_;
 
 
     // Protected Member Functions

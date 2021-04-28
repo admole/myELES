@@ -108,7 +108,7 @@ void Foam::fv::CorrectionForce::drift(fvMatrix<vector>& eqn)
         scalar dist = cmptMin(cmptMag(dists));
         scalar norm_dist = dist / max_dist;
         scalar wi = 1 - norm_dist;
-        scalar timescale = max(0.1*k_[celli]/eps_[celli], dt_);
+        scalar timescale = max(C1_*k_[celli]/eps_[celli], dt_);
         // scalar timescale = 1.0;
         // scalar timescale = dt_;
         vector drift = wi * (U_les[celli] - U[celli]) / (timescale) * vol[celli];
@@ -171,6 +171,7 @@ bool Foam::fv::CorrectionForce::read(const dictionary& dict)
         coeffs_.readEntry("bMin", b_min);
         coeffs_.readEntry("bMax", b_max);
         coeffs_.readEntry("Qramp", Qramp);
+        coeffs_.readEntry("C1", C1_);           //TODO: Read if present???
 
         if (!coeffs_.readIfPresent("UNames", fieldNames_))
         {

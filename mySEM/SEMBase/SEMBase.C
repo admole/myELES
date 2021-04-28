@@ -349,7 +349,7 @@ void SEMBase::initilise()
             cellEdgeLengths[edgei] = mag( cellEdges[edgei].vec( mesh.points() ) );
         }
 
-        maxDelta_[facei] = Foam::max(cellEdgeLengths);
+        maxDelta_[facei] = max(cellEdgeLengths);
     }
 
     // set length-scales

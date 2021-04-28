@@ -411,8 +411,9 @@ void SEMBase::initilise()
 
     reduce( avgWindow_, maxOp<scalar>() );
 
-    Info<< "Window Set "
-        << endl;
+    Info<< "Window = "
+            << avgWindow_
+            << endl;
 }
 
 int SEMBase::numEddies()

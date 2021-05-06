@@ -113,7 +113,7 @@ void Foam::fv::CorrectionForce::drift(fvMatrix<vector>& eqn)
         scalar timescale = max(C1_*k_[celli]/eps_[celli], dt_);
         // scalar timescale = 1.0;
         // scalar timescale = dt_;
-        vector drift = ramp * wi * (U_les[celli] - U[celli]) / (timescale) * vol[celli];
+        vector drift = ramp * wi * (U[celli] - U_les[celli]) / (timescale) * vol[celli];
         source[celli] += drift;
 
         Info<< type() << "Drifting: cell: " << celli

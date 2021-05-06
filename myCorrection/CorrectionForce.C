@@ -70,7 +70,7 @@ void Foam::fv::CorrectionForce::drift(fvMatrix<vector>& eqn)
     const vector b_size = b_max - b_min;
     const scalar max_dist = mag(b_size);
     const scalar dt_ = 0.1; //runTime_.deltaTValue();
-
+    
 
 
     forAll(cells_, i)
@@ -122,9 +122,6 @@ void Foam::fv::CorrectionForce::drift(fvMatrix<vector>& eqn)
 
     }
 
-    // eqn.correctBoundaryConditions();
-
-
     Info<< type() << " " << name_ << " corrected U to LES Mean " << endl;
 
 }
@@ -157,6 +154,13 @@ void Foam::fv::CorrectionForce::addSup
     drift(eqn);
 }
 
+void Foam::fv::CorrectionForce::correct
+        (
+                volVectorField& U
+        )
+{
+    U.correctBoundaryConditions();
+}
 
 void Foam::fv::CorrectionForce::writeData(Ostream& os) const
 {

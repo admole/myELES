@@ -130,11 +130,14 @@ public:
 
         // Set values directly
 
-            //- Constrain vector matrix
+            //- add Sup vector matrix
             virtual void addSup(fvMatrix<vector>& eqn, const label fieldi);
 
+            // correct BC
+            virtual void correct(volVectorField& U);
 
-        // I-O
+
+    // I-O
 
             //- Write data
             virtual void writeData(Ostream& os) const;

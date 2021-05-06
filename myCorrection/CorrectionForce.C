@@ -69,8 +69,10 @@ void Foam::fv::CorrectionForce::drift(fvMatrix<vector>& eqn)
 
     const vector b_size = b_max - b_min;
     const scalar max_dist = mag(b_size);
-    const scalar dt_ = 0.1; //runTime_.deltaTValue();
-    
+    const scalar dt_ = mesh_.time().deltaTValue();
+
+    const scalar t = mesh_.time().value();
+    const scalar ramp = min((t - rampStart)/(rampEnd - rampStart), 1.0);
 
 
     forAll(cells_, i)
@@ -111,7 +113,7 @@ void Foam::fv::CorrectionForce::drift(fvMatrix<vector>& eqn)
         scalar timescale = max(C1_*k_[celli]/eps_[celli], dt_);
         // scalar timescale = 1.0;
         // scalar timescale = dt_;
-        vector drift = wi * (U_les[celli] - U[celli]) / (timescale) * vol[celli];
+        vector drift = ramp * wi * (U_les[celli] - U[celli]) / (timescale) * vol[celli];
         source[celli] += drift;
 
         Info<< type() << "Drifting: cell: " << celli
@@ -174,7 +176,8 @@ bool Foam::fv::CorrectionForce::read(const dictionary& dict)
     {
         coeffs_.readEntry("bMin", b_min);
         coeffs_.readEntry("bMax", b_max);
-        coeffs_.readEntry("Qramp", Qramp);
+        coeffs_.readEntry("rampStart", rampStart);
+        coeffs_.readEntry("rampEnd", rampEnd);
         coeffs_.readEntry("C1", C1_);           //TODO: Read if present???
 
         if (!coeffs_.readIfPresent("UNames", fieldNames_))

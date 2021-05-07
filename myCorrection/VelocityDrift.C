@@ -23,7 +23,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "CorrectionForce.H"
+#include "VelocityDrift.H"
 #include "addToRunTimeSelectionTable.H"
 #include "fvMatrix.H"
 #include "volFields.H"
@@ -34,11 +34,11 @@ namespace Foam
 {
 namespace fv
 {
-    defineTypeNameAndDebug(CorrectionForce, 0);
+    defineTypeNameAndDebug(VelocityDrift, 0);
     addToRunTimeSelectionTable
     (
         option,
-        CorrectionForce,
+        VelocityDrift,
         dictionary
     );
 }
@@ -47,7 +47,7 @@ namespace fv
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-void Foam::fv::CorrectionForce::drift(fvMatrix<vector>& eqn)
+void Foam::fv::VelocityDrift::drift(fvMatrix<vector>& eqn)
 {
 
     // access to velocity equation terms
@@ -131,7 +131,7 @@ void Foam::fv::CorrectionForce::drift(fvMatrix<vector>& eqn)
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::fv::CorrectionForce::CorrectionForce
+Foam::fv::VelocityDrift::VelocityDrift
 (
     const word& name,
     const word& modelType,
@@ -147,7 +147,7 @@ Foam::fv::CorrectionForce::CorrectionForce
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::fv::CorrectionForce::addSup
+void Foam::fv::VelocityDrift::addSup
 (
     fvMatrix<vector>& eqn,
     const label fieldi
@@ -156,7 +156,7 @@ void Foam::fv::CorrectionForce::addSup
     drift(eqn);
 }
 
-void Foam::fv::CorrectionForce::correct
+void Foam::fv::VelocityDrift::correct
         (
                 volVectorField& U
         )
@@ -164,13 +164,13 @@ void Foam::fv::CorrectionForce::correct
     U.correctBoundaryConditions();
 }
 
-void Foam::fv::CorrectionForce::writeData(Ostream& os) const
+void Foam::fv::VelocityDrift::writeData(Ostream& os) const
 {
     dict_.writeEntry(name_, os);
 }
 
 
-bool Foam::fv::CorrectionForce::read(const dictionary& dict)
+bool Foam::fv::VelocityDrift::read(const dictionary& dict)
 {
     if (cellSetOption::read(dict))
     {

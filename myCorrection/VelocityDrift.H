@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::fv::CorrectionForce
+    Foam::fv::VelocityDrift
 
 Group
     grpFvOptionsConstraints
@@ -41,7 +41,7 @@ Description
 
     Constraint described by:
 
-        CorrectionForceCoeffs
+        VelocityDriftCoeffs
         {
             UMax        100;
 
@@ -52,12 +52,12 @@ Description
 
 
 SourceFiles
-    CorrectionForce.C
+    VelocityDrift.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef CorrectionForce_H
-#define CorrectionForce_H
+#ifndef VelocityDrift_H
+#define VelocityDrift_H
 
 #include "cellSetOption.H"
 
@@ -69,10 +69,10 @@ namespace fv
 {
 
 /*---------------------------------------------------------------------------*\
-                  Class CorrectionForce Declaration
+                  Class VelocityDrift Declaration
 \*---------------------------------------------------------------------------*/
 
-class CorrectionForce
+class VelocityDrift
 :
     public cellSetOption
 {
@@ -99,22 +99,22 @@ private:
     // Private Member Functions
 
         //- No copy construct
-        CorrectionForce(const CorrectionForce&) = delete;
+        VelocityDrift(const VelocityDrift&) = delete;
 
         //- No copy assignment
-        void operator=(const CorrectionForce&) = delete;
+        void operator=(const VelocityDrift&) = delete;
 
 
 public:
 
     //- Runtime type information
-    TypeName("CorrectionForce");
+    TypeName("VelocityDrift");
 
 
     // Constructors
 
         //- Construct from components
-        CorrectionForce
+        VelocityDrift
         (
             const word& name,
             const word& modelType,
@@ -124,7 +124,7 @@ public:
 
 
     //- Destructor
-    virtual ~CorrectionForce() = default;
+    virtual ~VelocityDrift() = default;
 
 
     // Member Functions

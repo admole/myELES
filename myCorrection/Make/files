@@ -1,5 +1,5 @@
 
-CorrectionForce.C
+VelocityDrift.C
 
 
 LIB = $(FOAM_USER_LIBBIN)/libMyCorrection

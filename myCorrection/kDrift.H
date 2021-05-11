@@ -91,7 +91,7 @@ protected:
 
     // Protected Member Functions
 
-        void drift(fvMatrix<vector>& eqn);
+        void drift(fvMatrix<scalar>& eqn);
 
 
 private:
@@ -131,11 +131,11 @@ public:
 
         // Set values directly
 
-            //- add Sup vector matrix
-            virtual void addSup(fvMatrix<vector>& eqn, const label fieldi);
+            //- add Sup scalar matrix
+            virtual void addSup(fvMatrix<scalar>& eqn, const label fieldi);
 
             // correct BC
-            virtual void correct(volVectorField& U);
+            virtual void correct(volScalarField& k);
 
 
     // I-O

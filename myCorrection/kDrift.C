@@ -47,19 +47,21 @@ namespace fv
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-void Foam::fv::kDrift::drift(fvMatrix<vector>& eqn)
+void Foam::fv::kDrift::drift(fvMatrix<scalar>& eqn)
 {
 
     // access to velocity equation terms
     const scalarField& vol = mesh_.V();
-    const volVectorField& U = eqn.psi();
+    const volScalarField& k = eqn.psi();
     // scalarField& diag = eqn.diag();
-    vectorField& source = eqn.source();
+    scalarField& source = eqn.source();
 
     //const dimensionedScalar& readNu = db().lookupObject<IOdictionary>("transportProperties").lookup("nu");
 
     //const volVectorField U = mesh_.lookupObject<volVectorField>("U");
     const volVectorField& U_les = mesh_.lookupObject<volVectorField>("U_LES");
+    const volSymmTensorField& UP2M_les = mesh_.lookupObject<volSymmTensorField>("UP2M_LES");
+    const volScalarField& k_les = 0.5 * tr(UP2M_les);
     const volScalarField& k_ = mesh_.lookupObject<volScalarField>("turbulenceProperties:k");
     const volScalarField& eps_ = mesh_.lookupObject<volScalarField>("turbulenceProperties:epsilon");
 
@@ -113,14 +115,16 @@ void Foam::fv::kDrift::drift(fvMatrix<vector>& eqn)
         scalar timescale = max(C1_*k_[celli]/eps_[celli], dt_);
         // scalar timescale = 1.0;
         // scalar timescale = dt_;
-        vector drift = ramp * wi * (U[celli] - U_les[celli]) / (timescale) * vol[celli];
+        scalar drift = ramp * wi * (k_[celli] - k_les[celli]) / (timescale) * vol[celli];
         source[celli] += drift;
 
         Info<< type() << "Drifting: cell: " << celli
-                      << " U: " << U[celli]
-                      << " U_les: " << U_les[celli]
-                      << " with f: " << drift
-                      << endl;
+            << " k: " << k[celli]
+            << " k_: " << k_[celli]
+            << " k_les: " << k_les[celli]
+            << " with f: " << drift
+            << endl;
+
 
     }
 
@@ -149,19 +153,20 @@ Foam::fv::kDrift::kDrift
 
 void Foam::fv::kDrift::addSup
 (
-    fvMatrix<vector>& eqn,
+    fvMatrix<scalar>& eqn,
     const label fieldi
 )
 {
+    Info<< type() << "Drifting field" << fieldi << endl;
     drift(eqn);
 }
 
 void Foam::fv::kDrift::correct
         (
-                volVectorField& U
+                volScalarField& k
         )
 {
-    U.correctBoundaryConditions();
+    k.correctBoundaryConditions();
 }
 
 void Foam::fv::kDrift::writeData(Ostream& os) const
@@ -180,10 +185,10 @@ bool Foam::fv::kDrift::read(const dictionary& dict)
         coeffs_.readEntry("rampEnd", rampEnd);
         coeffs_.readEntry("C1", C1_);           //TODO: Read if present???
 
-        if (!coeffs_.readIfPresent("UNames", fieldNames_))
+        if (!coeffs_.readIfPresent("kNames", fieldNames_))
         {
             fieldNames_.resize(1);
-            fieldNames_.first() = coeffs_.lookupOrDefault<word>("U", "U");
+            fieldNames_.first() = coeffs_.lookupOrDefault<word>("k", "k");
         }
 
         applied_.setSize(fieldNames_.size(), false);

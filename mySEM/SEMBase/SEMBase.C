@@ -577,7 +577,7 @@ void SEMBase::updateCoeffs()
         }
         else
         {
-            this->valueFraction() = 0.0;
+            this->valueFraction() = 1.0;
         }
 
         curTimeIndex_ = this->db().time().timeIndex();

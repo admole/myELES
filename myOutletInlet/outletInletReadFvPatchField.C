@@ -209,7 +209,7 @@ void outletInletReadFvPatchScalarField::updateCoeffs()
     }
     else
     {
-        valueFraction() = 1.0;
+        valueFraction() = 0.0;
     }
     refGrad() = gradField_;
     refValue() = valueField_;

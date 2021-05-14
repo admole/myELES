@@ -47,7 +47,8 @@ outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
     FieldName_("pIn"),
     GradFieldName_("pGradIn"),
     valueField_(p.size()),
-    gradField_(p.size())
+    gradField_(p.size()),
+    inlet_outlet_(0)
 {
 //    this->refValue() = *this;
 //    this->refGrad() = Zero;
@@ -68,7 +69,8 @@ outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
     FieldName_(ptf.FieldName_),
     GradFieldName_(ptf.GradFieldName_),
     valueField_(ptf.valueField_, mapper),
-    gradField_(ptf.gradField_, mapper)
+    gradField_(ptf.gradField_, mapper),
+    inlet_outlet_(ptf.inlet_outlet_)
 {}
 
 
@@ -84,7 +86,8 @@ outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
     FieldName_(dict.lookupOrDefault<word>("FieldName", "pIn")),
     GradFieldName_(dict.lookupOrDefault<word>("GradFieldName", "pGradIn")),
     valueField_(p.size()),
-    gradField_(p.size())
+    gradField_(p.size()),
+    inlet_outlet_(dict.lookupOrDefault("inletOutlet", true))
 {
     //patchType() = dict.lookupOrDefault<word>("patchType", word::null);
 
@@ -152,7 +155,8 @@ outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
     FieldName_(ptf.FieldName_),
     GradFieldName_(ptf.GradFieldName_),
     valueField_(ptf.valueField_),
-    gradField_(ptf.gradField_)
+    gradField_(ptf.gradField_),
+    inlet_outlet_(ptf.inlet_outlet_)
 {}
 
 
@@ -167,7 +171,8 @@ outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
     FieldName_(ptf.FieldName_),
     GradFieldName_(ptf.GradFieldName_),
     valueField_(ptf.valueField_),
-    gradField_(ptf.gradField_)
+    gradField_(ptf.gradField_),
+    inlet_outlet_(ptf.inlet_outlet_)
 {}
 
 
@@ -198,7 +203,14 @@ void outletInletReadFvPatchScalarField::updateCoeffs()
             phiName_
         );
 
-    valueFraction() = pos0(phip);
+    if (inlet_outlet_)
+    {
+        valueFraction() = pos0(phip);
+    }
+    else
+    {
+        valueFraction() = 1.0;
+    }
     refGrad() = gradField_;
     refValue() = valueField_;
 
@@ -213,6 +225,7 @@ void outletInletReadFvPatchScalarField::write(Ostream& os) const
     os.writeEntryIfDifferent<word>("phi", "phi", phiName_);
     refValue().writeEntry("outletValue", os);
     writeEntry("value", os);
+    os.writeKeyword("inletOutlet") << inlet_outlet_ << token::END_STATEMENT << nl;
 }
 
 

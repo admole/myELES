@@ -65,7 +65,7 @@ void Foam::fv::kDrift::drift(fvMatrix<scalar>& eqn)
     const volScalarField& eps_ = mesh_.lookupObject<volScalarField>("turbulenceProperties:epsilon");
 
 //    const volScalarField k_les = 0.5 * tr(UP2M_les);  // Possible issue with trace of symmetrical tensor?
-    const volScalarField k_les = 0.5 * (UP2M_les.component(tensor::XX) + UP2M_les.component(tensor::YY) + UP2M_les.component(tensor::ZZ));
+    const volScalarField k_les = 0.5 * (UP2M_les.component(symmTensor::XX) + UP2M_les.component(symmTensor::YY) + UP2M_les.component(symmTensor::ZZ));
 
     const dimensionedScalar smallv("smallv", dimensionSet(0,1,-1,0,0,0,0), 1e-06);
     const volVectorField flowDir_ = U_les / max(mag(U_les), smallv);         // should this be U or U_les (or combination)

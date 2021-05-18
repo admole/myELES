@@ -176,13 +176,13 @@ void turbulentInletSEMFvPatchField::initiliseRun()
 
     forAll(*this, facei)
     {
-        a_[facei].xx() = sqrt( max( RIn_[facei].xx(), SMALL ) );
+        a_[facei].xx() = sqrt( mag(RIn_[facei].xx()) );
         a_[facei].yx() = RIn_[facei].xy()/max( a_[facei].xx(), SMALL );
-        a_[facei].yy() = sqrt( max( RIn_[facei].yy() - pow( a_[facei].yx(), 2), SMALL ));
+        a_[facei].yy() = sqrt( mag( RIn_[facei].yy() - pow( a_[facei].yx(), 2) ));
         a_[facei].zx() = RIn_[facei].xz()/max( a_[facei].xx(), SMALL );
         a_[facei].zy() = (RIn_[facei].yz() - a_[facei].yx()*a_[facei].zx())/max( a_[facei].yy(), SMALL );
         a_[facei].zz() =
-                sqrt( max( RIn_[facei].zz() - pow( a_[facei].zx(), 2) - pow( a_[facei].zy(), 2), SMALL));
+                sqrt( mag( RIn_[facei].zz() - pow( a_[facei].zx(), 2) - pow( a_[facei].zy(), 2) ));
     }
 }
 

@@ -368,9 +368,9 @@ void SEMBase::initilise()
         sigma_[facei] =
                 vector
                         (
-                                pow(max(RIn_[facei].xx(), SMALL), 1.5),
-                                pow(max(RIn_[facei].yy(), SMALL), 1.5),
-                                pow(max(RIn_[facei].zz(), SMALL), 1.5)
+                                pow(mag(RIn_[facei].xx()), 1.5),
+                                pow(mag(RIn_[facei].yy()), 1.5),
+                                pow(mag(RIn_[facei].zz()), 1.5)
                         ) *C / epsIn_[facei];
 
         for( int i=0; i<3; i++ )

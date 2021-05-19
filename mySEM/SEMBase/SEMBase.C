@@ -413,7 +413,7 @@ void SEMBase::initilise()
 int SEMBase::numEddies()
 {
     int numSpots = 0;
-    const int maxSpots=10000;
+    const int maxSpots=100000;
 
     scalar minLength = GREAT;
     

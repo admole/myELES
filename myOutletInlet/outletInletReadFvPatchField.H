@@ -97,7 +97,8 @@ protected:
         word GradFieldName_;
         Field<scalar> valueField_;
         Field<scalar> gradField_;
-        bool inlet_outlet_;
+        bool inlet_;
+        bool outlet_;
 
 
 public:

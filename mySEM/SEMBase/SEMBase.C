@@ -54,7 +54,8 @@ SEMBase::SEMBase
     maxDelta_(p.size()),
     maxSigma_(0.1),
     embedded_(0),
-    inlet_outlet_(0),
+    inlet_(1),
+    outlet_(0),
     phiName_("phi")
 {
     this->refValue() = Zero;
@@ -88,7 +89,8 @@ SEMBase::SEMBase
     maxDelta_(ptf.maxDelta_, mapper),
     maxSigma_(ptf.maxSigma_),
     embedded_(ptf.embedded_),
-    inlet_outlet_(ptf.inlet_outlet_),
+    inlet_(ptf.inlet_),
+    outlet_(ptf.outlet_),
     avgWindow_(ptf.avgWindow_),
     phiName_(ptf.phiName_)
 {
@@ -120,7 +122,8 @@ SEMBase::SEMBase
     //epsIn_(this->db().lookupObject<volScalarField>("epsIn")),
     sigma_(p.size()),
     embedded_(dict.lookupOrDefault("embedded", true)),
-    inlet_outlet_(dict.lookupOrDefault("inletOutlet", true)),
+    inlet_(dict.lookupOrDefault("inlet", true)),
+    outlet_(dict.lookupOrDefault("outlet", false)),
     maxDelta_(p.size()),
     maxSigma_(dict.lookupOrDefault<scalar>("maxSigma", GREAT)),
     phiName_(dict.lookupOrDefault<word>("phi", "phi"))
@@ -242,7 +245,8 @@ SEMBase::SEMBase
     epsIn_(ptf.epsIn_),
     sigma_(ptf.sigma_),
     embedded_(ptf.embedded_),
-    inlet_outlet_(ptf.inlet_outlet_),
+    inlet_(ptf.inlet_),
+    outlet_(ptf.outlet_),
     maxDelta_(ptf.maxDelta_),
     maxSigma_(ptf.maxSigma_),
     spot_(ptf.spot_), 
@@ -274,7 +278,8 @@ SEMBase::SEMBase
     epsIn_(ptf.epsIn_),
     sigma_(ptf.sigma_),
     embedded_(ptf.embedded_),
-    inlet_outlet_(ptf.inlet_outlet_),
+    inlet_(ptf.inlet_),
+    outlet_(ptf.outlet_),
     maxDelta_(ptf.maxDelta_),
     maxSigma_(ptf.maxSigma_),
     avgWindow_(ptf.avgWindow_),
@@ -569,15 +574,25 @@ void SEMBase::updateCoeffs()
         const surfaceScalarField & phi = this->db().objectRegistry::lookupObject<surfaceScalarField>(phiName_);
         const scalarField & phip = phi.boundaryField()[patchIndex];
 
-        if (inlet_outlet_)
+        if (inlet_ && outlet_)
         {
             this->valueFraction() = 1.0 - pos0(phip);
             //this->valueFraction() = 1.0 - pos0((meanField_ & this->patch().nf()) / mag(meanField_ & this->patch().nf()));
 
         }
-        else
+        else if (inlet_)
         {
             this->valueFraction() = 1.0;
+        }
+        else if (outlet_)
+        {
+            this->valueFraction() = 0.0;
+        }
+        else
+        {
+            Info<< "WARNING: Both inlet and outlet switched off - defaulting to inlet/outlet"
+                << endl;
+            this->valueFraction() = 1.0 - pos0(phip);
         }
 
         curTimeIndex_ = this->db().time().timeIndex();
@@ -596,7 +611,8 @@ void SEMBase::write(Ostream& os) const
 {
     fvPatchField<vector>::write(os);
     os.writeKeyword("embedded") << embedded_ << token::END_STATEMENT << nl;
-    os.writeKeyword("inletOutlet") << inlet_outlet_ << token::END_STATEMENT << nl;
+    os.writeKeyword("inlet") << inlet_ << token::END_STATEMENT << nl;
+    os.writeKeyword("outlet") << outlet_ << token::END_STATEMENT << nl;
     os.writeKeyword("maxSigma") << maxSigma_ << token::END_STATEMENT << nl;
     os.writeKeyword("UFieldName") << UFieldName_ << token::END_STATEMENT << nl;
     os.writeKeyword("UGradFieldName") << UGradFieldName_ << token::END_STATEMENT << nl;

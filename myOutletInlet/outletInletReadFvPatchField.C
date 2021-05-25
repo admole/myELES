@@ -48,7 +48,8 @@ outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
     GradFieldName_("pGradIn"),
     valueField_(p.size()),
     gradField_(p.size()),
-    inlet_outlet_(0)
+    inlet_(1),
+    outlet_(0)
 {
 //    this->refValue() = *this;
 //    this->refGrad() = Zero;
@@ -70,7 +71,8 @@ outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
     GradFieldName_(ptf.GradFieldName_),
     valueField_(ptf.valueField_, mapper),
     gradField_(ptf.gradField_, mapper),
-    inlet_outlet_(ptf.inlet_outlet_)
+    inlet_(ptf.inlet_),
+    outlet_(ptf.outlet_)
 {}
 
 
@@ -87,7 +89,8 @@ outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
     GradFieldName_(dict.lookupOrDefault<word>("GradFieldName", "pGradIn")),
     valueField_(p.size()),
     gradField_(p.size()),
-    inlet_outlet_(dict.lookupOrDefault("inletOutlet", true))
+    inlet_(dict.lookupOrDefault("inlet", true)),
+    outlet_(dict.lookupOrDefault("outlet", false))
 {
     //patchType() = dict.lookupOrDefault<word>("patchType", word::null);
 
@@ -156,7 +159,8 @@ outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
     GradFieldName_(ptf.GradFieldName_),
     valueField_(ptf.valueField_),
     gradField_(ptf.gradField_),
-    inlet_outlet_(ptf.inlet_outlet_)
+    inlet_(ptf.inlet_),
+    outlet_(ptf.outlet_)
 {}
 
 
@@ -172,7 +176,8 @@ outletInletReadFvPatchScalarField::outletInletReadFvPatchScalarField
     GradFieldName_(ptf.GradFieldName_),
     valueField_(ptf.valueField_),
     gradField_(ptf.gradField_),
-    inlet_outlet_(ptf.inlet_outlet_)
+    inlet_(ptf.inlet_),
+    outlet_(ptf.outlet_)
 {}
 
 
@@ -203,13 +208,23 @@ void outletInletReadFvPatchScalarField::updateCoeffs()
             phiName_
         );
 
-    if (inlet_outlet_)
+    if (inlet_ && outlet_)
     {
         valueFraction() = pos0(phip);
     }
-    else
+    else if (inlet_)
     {
         valueFraction() = 0.0;
+    }
+    else if (outlet_)
+    {
+        valueFraction() = 1.0;
+    }
+    else
+    {
+        Info<< "WARNING: Both inlet and outlet switched off - defaulting to outlet/inlet"
+            << endl;
+        valueFraction() = pos0(phip);
     }
     refGrad() = gradField_;
     refValue() = valueField_;
@@ -225,7 +240,8 @@ void outletInletReadFvPatchScalarField::write(Ostream& os) const
     os.writeEntryIfDifferent<word>("phi", "phi", phiName_);
     refValue().writeEntry("outletValue", os);
     writeEntry("value", os);
-    os.writeKeyword("inletOutlet") << inlet_outlet_ << token::END_STATEMENT << nl;
+    os.writeKeyword("inlet") << inlet_<< token::END_STATEMENT << nl;
+    os.writeKeyword("outlet") << outlet_ << token::END_STATEMENT << nl;
 }
 
 

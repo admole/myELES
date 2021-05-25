@@ -60,7 +60,8 @@ protected:
         Field<scalar> epsIn_;
         Field<vector> sigma_;
         bool embedded_;
-        bool inlet_outlet_;
+        bool inlet_;
+        bool outlet_;
         DynamicList<SEMspot*> spot_;
         scalar avgWindow_;
         scalar maxSigma_;

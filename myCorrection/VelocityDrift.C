@@ -115,13 +115,7 @@ void Foam::fv::VelocityDrift::drift(fvMatrix<vector>& eqn)
         // scalar timescale = dt_;
         vector drift = ramp * wi * (U[celli] - U_les[celli]) / (timescale) * vol[celli];
         source[celli] += drift;
-
-        Info<< type() << "Drifting: cell: " << celli
-                      << " U: " << U[celli]
-                      << " U_les: " << U_les[celli]
-                      << " with f: " << drift
-                      << endl;
-
+        
     }
 
     Info<< type() << " " << name_ << " corrected U to LES Mean " << endl;

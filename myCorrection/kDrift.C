@@ -120,14 +120,6 @@ void Foam::fv::kDrift::drift(fvMatrix<scalar>& eqn)
         scalar drift = ramp * wi * (k_[celli] - k_les[celli]) / (timescale) * vol[celli];
         source[celli] += drift;
 
-        Info<< type() << "Drifting: cell: " << celli
-            << " k: " << k[celli]
-            << " k_les: " << k_les[celli]
-//            << " k_les2: " << k_les2[celli]
-            << " with f: " << drift
-            << endl;
-
-
     }
 
     Info<< type() << " " << name_ << " corrected U to LES Mean " << endl;

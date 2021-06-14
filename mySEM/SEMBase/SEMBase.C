@@ -406,7 +406,7 @@ void SEMBase::initilise()
         << endl;
 
     //set averaging window size
-    avgWindow_ = cmptMax( max(sigma_) ) / (mag(UBulk_) + SMALL) * 5.0;
+    avgWindow_ = cmptMax( max(sigma_) ) / max(mag(UBulk_), SMALL) * 5.0;
 
     reduce( avgWindow_, maxOp<scalar>() );
 
@@ -543,7 +543,7 @@ void SEMBase::correctMass()
 
     forAll(*this, facei)
     { 
-        (*this)[facei] *= UBulk_/Uc;
+        (*this)[facei] *= mag(UBulk_)/max(mag(Uc), SMALL);
     } 
 }
 
@@ -559,25 +559,22 @@ void SEMBase::updateCoeffs()
     
     if (curTimeIndex_ != this->db().time().timeIndex() && this->db().time().value() > this->db().time().deltaTValue())
     {
-
-        this->advectPoints();            
-   
-        this->updateU();
-        
-        this->correctMass();
+        Info<< "SEM inlet / outlet patch = "
+            << this->patch().name()
+            << endl;
 
         label patchIndex = this->patch().index();
         //const label patchId = mesh.boundaryMesh().findPatchID(this->patch().name());
-
-        this->refGrad() = UGradIn_;
-
         const surfaceScalarField & phi = this->db().objectRegistry::lookupObject<surfaceScalarField>(phiName_);
         const scalarField & phip = phi.boundaryField()[patchIndex];
 
         if (inlet_ && outlet_)
         {
-            this->valueFraction() = 1.0 - pos0(phip);
-            //this->valueFraction() = 1.0 - pos0((meanField_ & this->patch().nf()) / mag(meanField_ & this->patch().nf()));
+            //this->valueFraction() = 1.0 - pos0(phip);
+            this->valueFraction() = 1.0 - pos0(meanField_ & this->patch().nf());
+            Info<< "value fraction = "
+                << this->valueFraction()
+                << endl;
 
         }
         else if (inlet_)
@@ -594,6 +591,14 @@ void SEMBase::updateCoeffs()
                 << endl;
             this->valueFraction() = 1.0 - pos0(phip);
         }
+
+        this->advectPoints();
+
+        this->updateU();
+
+        this->correctMass();
+
+        this->refGrad() = UGradIn_;
 
         curTimeIndex_ = this->db().time().timeIndex();
     }

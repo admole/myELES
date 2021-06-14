@@ -208,9 +208,17 @@ void outletInletReadFvPatchScalarField::updateCoeffs()
             phiName_
         );
 
+    const Field<vector>& velField_ =
+            patch().template lookupPatchField<volVectorField, vector>
+                    (
+                            "UIn"
+                    );
+
     if (inlet_ && outlet_)
     {
-        valueFraction() = pos0(phip);
+        //valueFraction() = pos0(phip);
+        valueFraction() = pos0(velField_ & this->patch().nf());
+
     }
     else if (inlet_)
     {

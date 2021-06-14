@@ -1,5 +1,5 @@
 outletInletReadFvPatchField.C
 
-LIB = $(FOAM_USER_LIBBIN)/libmyOutletInlet
+LIB = $(FOAM_USER_LIBBIN)/libmyOutletInlet_RANSswitch
 
 

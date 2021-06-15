@@ -511,7 +511,7 @@ void SEMBase::advectPoints()
         {
             scalar origSize = mag( spot_[i]->sigma() );
             Info<< "Old turbulent spot at "
-                << spot_[i]->origin_()
+                << spot_[i]->origin()
                 << "and size "
                 << spot_[i]->sigma()
                 << endl;
@@ -521,7 +521,7 @@ void SEMBase::advectPoints()
             } while( mag( spot_[i]->sigma() ) > 1.1*origSize || mag( spot_[i]->sigma() ) < 0.9*origSize );
 
             Info<< "New turbulent spot at "
-                << spot_[i]->origin_()
+                << spot_[i]->origin()
                 << "and size "
                 << spot_[i]->sigma()
                 << endl;

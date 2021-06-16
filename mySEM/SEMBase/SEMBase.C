@@ -380,8 +380,8 @@ void SEMBase::initilise()
 
         for( int i=0; i<3; i++ )
         {
-            sigma_[facei][i] = max( sigma_[facei][i],  maxDelta_[facei] );
             sigma_[facei][i] = min( sigma_[facei][i],  maxSigma_ );
+            sigma_[facei][i] = max( sigma_[facei][i],  maxDelta_[facei] );
         }
     }
 

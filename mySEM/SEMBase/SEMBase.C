@@ -510,6 +510,7 @@ void SEMBase::advectPoints()
         if(regen)
         {
             scalar origSize = mag( spot_[i]->sigma() );
+            vector origPos = spot_[i]->origin();
             Info<< "Old turbulent spot at "
                 << spot_[i]->origin()
                 << "and size "
@@ -518,7 +519,7 @@ void SEMBase::advectPoints()
             do
             {
                 spot_[i]->initialise(true);
-            } while( mag( spot_[i]->sigma() ) > 1.1*origSize || mag( spot_[i]->sigma() ) < 0.9*origSize );
+            } while( mag( spot_[i]->origin() - origPos ) / mag(semBox_.max() - semBox_.min()) > 0.1  );
 
             Info<< "New turbulent spot at "
                 << spot_[i]->origin()

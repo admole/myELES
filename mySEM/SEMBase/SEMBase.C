@@ -516,10 +516,8 @@ void SEMBase::advectPoints()
                 << "and size "
                 << spot_[i]->sigma()
                 << endl;
-            do
-            {
-                spot_[i]->initialise(true);
-            } while( mag( spot_[i]->origin() - origPos ) / mag(semBox_.max() - semBox_.min()) > 0.1  );
+
+            spot_[i]->initialise(true);
 
             Info<< "New turbulent spot at "
                 << spot_[i]->origin()

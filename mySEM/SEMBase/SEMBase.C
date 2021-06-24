@@ -563,6 +563,14 @@ void SEMBase::updateCoeffs()
             << this->patch().name()
             << endl;
 
+        this->advectPoints();
+
+        this->updateU();
+
+        this->correctMass();
+
+        this->refGrad() = UGradIn_;
+
         label patchIndex = this->patch().index();
         //const label patchId = mesh.boundaryMesh().findPatchID(this->patch().name());
         const surfaceScalarField & phi = this->db().objectRegistry::lookupObject<surfaceScalarField>(phiName_);
@@ -591,14 +599,6 @@ void SEMBase::updateCoeffs()
                 << endl;
             this->valueFraction() = 1.0 - pos0(phip);
         }
-
-        this->advectPoints();
-
-        this->updateU();
-
-        this->correctMass();
-
-        this->refGrad() = UGradIn_;
 
         curTimeIndex_ = this->db().time().timeIndex();
     }

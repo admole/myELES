@@ -520,7 +520,7 @@ void SEMBase::advectPoints()
             {
                 Info<< "Attempting regeneration"<< endl;
                 spot_[i]->initialise(true);
-            } while( mag( spot_[i]->sigma() ) > 1.1*origSize || mag( spot_[i]->sigma() ) < 0.9*origSize );
+            } while( mag( spot_[i]->sigma() ) > 2*origSize || mag( spot_[i]->sigma() ) < 0.5*origSize );
             Info<< "New spot size = "
                 << mag( spot_[i]->sigma() )
                 << endl;

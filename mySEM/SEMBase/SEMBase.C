@@ -509,12 +509,21 @@ void SEMBase::advectPoints()
 
         if(regen)
         {
+            Info<< "Regenerating spot as time > "
+                << spot_[i]->residenceTime()
+                << endl;
             scalar origSize = mag( spot_[i]->sigma() );
+            Info<< "Old spot size = "
+                << origSize
+                << endl;
             do
             {
+                Info<< "Attempting regeneration"<< endl;
                 spot_[i]->initialise(true);
             } while( mag( spot_[i]->sigma() ) > 1.1*origSize || mag( spot_[i]->sigma() ) < 0.9*origSize );
-           
+            Info<< "New spot size = "
+                << mag( spot_[i]->sigma() )
+                << endl;
         }
     }
 }

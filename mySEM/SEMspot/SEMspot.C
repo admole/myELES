@@ -75,7 +75,7 @@ void SEMspot::initialise(const bool setToFace )
         << endl;
 
     vector nn( -u_ );
-    nn /= mag(nn);
+    nn /= max(mag(nn), SMALL);
     u_=mag(u_)*-nn;
 
     this->projectBack( nn, setToFace );
@@ -89,11 +89,11 @@ void SEMspot::initialise(const bool setToFace )
 
     if( setToFace )
     {      
-        residenceTime_ = pf_->db().time().value() + 2.0*projectedDist/mag(u_);
+        residenceTime_ = pf_->db().time().value() + 2.0*projectedDist/max(mag(u_), SMALL);
     }
     else
     {
-        residenceTime_ = pf_->db().time().value() + (projectedDist + mag((sigma_&nn)) )/mag(u_);
+        residenceTime_ = pf_->db().time().value() + (projectedDist + mag((sigma_&nn)) )/max(mag(u_), SMALL);
     }
 
     if( Pstream::master() )

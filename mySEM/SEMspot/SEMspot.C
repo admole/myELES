@@ -64,7 +64,15 @@ void SEMspot::initialise(const bool setToFace )
     }
     Pstream::scatter( origin_ );
 
-    interpolatePatchToSpot(); 
+    interpolatePatchToSpot();
+
+    Info<< "Interpolated U = "
+        << u_
+        << endl;
+
+    Info<< "Interpolated sigma = "
+        << sigma_
+        << endl;
 
     vector nn( -u_ );
     nn /= mag(nn);
@@ -194,7 +202,7 @@ void SEMspot::projectBack( vector nn, bool setToFace )
 
         if( setToFace )
         {
-            origin_ += mag(sigma_&nn)*nn;
+            origin_ += (sigma_&nn)*nn;
         }
         else
         {

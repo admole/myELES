@@ -202,7 +202,7 @@ void SEMspot::projectBack( vector nn, bool setToFace )
 
         if( setToFace )
         {
-            origin_ += (sigma_&nn)*nn;
+            origin_ += mag(sigma_&nn)*nn;
         }
         else
         {

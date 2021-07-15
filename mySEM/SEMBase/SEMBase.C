@@ -406,7 +406,7 @@ void SEMBase::initilise()
         << endl;
 
     //set averaging window size
-    avgWindow_ = cmptMax( max(sigma_) ) / max(mag(UBulk_), SMALL) * 5.0;
+    avgWindow_ = max(cmptMax( max(sigma_) ) / max(mag(UBulk_), SMALL) * 5.0, this->db().time().deltaTValue());
 
     reduce( avgWindow_, maxOp<scalar>() );
 

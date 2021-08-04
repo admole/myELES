@@ -128,7 +128,13 @@ void turbulentInletSEMFvPatchField::allocateSpots()
     for( int i=0; i<n; i++ ) 
     {
         spot_.append( new SEMspot(this) );
-        spot_.last()->initialise(false);
+        do
+        {
+            spot_.last()->initialise(false);
+        } while( spot_.last()->R().component(symmTensor::XX)
+                  +spot_.last()->R().component(symmTensor::YY)
+                  +spot_.last()->R().component(symmTensor::ZZ)
+                  < 3.0*pow(0.01*spot_[i]->u(), 2));
     }
 }
 

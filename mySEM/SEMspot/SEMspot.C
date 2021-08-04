@@ -47,6 +47,7 @@ SEMspot::SEMspot
     sigma_(spt->sigma_),
     epsilon_(spt->epsilon_),
     u_(spt->u_),
+    R_(spt->R_),
     nearest_(spt->nearest_),
     donorProcN_(spt->donorProcN_),
     residenceTime_(spt->residenceTime_)
@@ -167,15 +168,18 @@ void SEMspot::interpolatePatchToSpot()
     {
         sigma_ = pTraits<vector>::zero;
         u_ = pTraits<vector>::zero;
+        R_ = pTraits<symmTensor>::zero;
     }
     else
     {
         sigma_ = pf_->sigma()[nearest_];
         u_ = pf_->meanField()[nearest_];
+        R_ = pf_->RIn()[nearest_];
     }
  
     reduce( sigma_, maxOp<vector>() );
     reduce( u_, maxOp<vector>() );
+    reduce( R_, maxOp<symmTensor>() );
 
 }
 

@@ -44,6 +44,7 @@ protected:
     vector sigma_;
     vector epsilon_;
     vector u_;
+    symmTensor R_;
     label nearest_;
     label donorProcN_;
     scalar residenceTime_;
@@ -93,6 +94,11 @@ public:
     vector& u()
     {
         return u_;
+    }
+
+    symmTensor& R()
+    {
+        return R_;
     }
 
     scalar residenceTime()

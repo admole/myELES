@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::fv::CorrectionForce
+    Foam::fv::kDrift
 
 Group
     grpFvOptionsConstraints
@@ -41,7 +41,7 @@ Description
 
     Constraint described by:
 
-        CorrectionForceCoeffs
+        kDriftCoeffs
         {
             UMax        100;
 
@@ -52,12 +52,12 @@ Description
 
 
 SourceFiles
-    CorrectionForce.C
+    kDrift.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef CorrectionForce_H
-#define CorrectionForce_H
+#ifndef kDrift_H
+#define kDrift_H
 
 #include "cellSetOption.H"
 
@@ -69,10 +69,10 @@ namespace fv
 {
 
 /*---------------------------------------------------------------------------*\
-                  Class CorrectionForce Declaration
+                  Class kDrift Declaration
 \*---------------------------------------------------------------------------*/
 
-class CorrectionForce
+class kDrift
 :
     public cellSetOption
 {
@@ -84,11 +84,14 @@ protected:
         //- Maximum velocity
         vector b_max;
         vector b_min;
+        scalar rampStart;
+        scalar rampEnd;
+        scalar C1_;
 
 
     // Protected Member Functions
 
-        void addDamping(fvMatrix<vector>& eqn);
+        void drift(fvMatrix<scalar>& eqn);
 
 
 private:
@@ -96,22 +99,22 @@ private:
     // Private Member Functions
 
         //- No copy construct
-        CorrectionForce(const CorrectionForce&) = delete;
+        kDrift(const kDrift&) = delete;
 
         //- No copy assignment
-        void operator=(const CorrectionForce&) = delete;
+        void operator=(const kDrift&) = delete;
 
 
 public:
 
     //- Runtime type information
-    TypeName("CorrectionForce");
+    TypeName("kDrift");
 
 
     // Constructors
 
         //- Construct from components
-        CorrectionForce
+        kDrift
         (
             const word& name,
             const word& modelType,
@@ -121,18 +124,21 @@ public:
 
 
     //- Destructor
-    virtual ~CorrectionForce() = default;
+    virtual ~kDrift() = default;
 
 
     // Member Functions
 
         // Set values directly
 
-            //- Constrain vector matrix
-            virtual void constrain(fvMatrix<vector>& eqn, const label fieldi);
+            //- add Sup scalar matrix
+            virtual void addSup(fvMatrix<scalar>& eqn, const label fieldi);
+
+            // correct BC
+            virtual void correct(volScalarField& k);
 
 
-        // I-O
+    // I-O
 
             //- Write data
             virtual void writeData(Ostream& os) const;

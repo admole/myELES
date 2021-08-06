@@ -516,16 +516,19 @@ void SEMBase::advectPoints()
             Info<< "Old spot size = "
                 << origSize
                 << endl;
+            int attempt = 0;
             do
             {
-                Info<< "Attempting regeneration"<< endl;
+                Info<< "Attempting regeneration " << attempt << endl;
                 spot_[i]->initialise(true);
+                attempt +=1;
             } while( (mag( spot_[i]->sigma() ) > 2*origSize
                     || mag( spot_[i]->sigma() ) < 0.5*origSize)
                     && (spot_[i]->R().component(symmTensor::XX)
                         +spot_[i]->R().component(symmTensor::YY)
                         +spot_[i]->R().component(symmTensor::ZZ)
-                        < 3.0*(0.01*spot_[i]->u(), 2)));
+                        < 3.0*(0.01*mag(spot_[i]->u()), 2))
+                    && attempt < 10);
             Info<< "New spot size = "
                 << mag( spot_[i]->sigma() )
                 << endl;

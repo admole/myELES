@@ -128,13 +128,17 @@ void turbulentInletSEMFvPatchField::allocateSpots()
     for( int i=0; i<n; i++ ) 
     {
         spot_.append( new SEMspot(this) );
+        int attempt = 0;
         do
         {
+            Info<< "Attempting spot generation " << attempt << endl;
             spot_.last()->initialise(false);
-        } while( spot_.last()->R().component(symmTensor::XX)
+            attempt += 1
+        } while(( spot_.last()->R().component(symmTensor::XX)
                   +spot_.last()->R().component(symmTensor::YY)
                   +spot_.last()->R().component(symmTensor::ZZ)
-                  < 3.0*pow(0.01*spot_[i]->u(), 2));
+                  < 3.0*pow(0.01*mag(spot_[i]->u()), 2))
+                  && attempt < 10);
     }
 }
 

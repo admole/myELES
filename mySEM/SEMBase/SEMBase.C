@@ -527,7 +527,7 @@ void SEMBase::advectPoints()
                     && (spot_[i]->R().component(symmTensor::XX)
                         +spot_[i]->R().component(symmTensor::YY)
                         +spot_[i]->R().component(symmTensor::ZZ)
-                        < 3.0*(0.01*mag(spot_[i]->u()), 2))
+                        < 3.0*pow(0.01*mag(spot_[i]->u()), 2))
                     && attempt < 10);
             Info<< "New spot size = "
                 << mag( spot_[i]->sigma() )

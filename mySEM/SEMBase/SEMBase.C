@@ -406,13 +406,13 @@ void SEMBase::initilise()
         << endl;
 
     Info<< "Max Sigma = "
-        << cmptMax( max(sigma_) )
+        << max(cmptMax( max(sigma_) ), 0)
         << "  Max U = "
         << max(mag(UBulk_), SMALL)
         << endl;
 
     //set averaging window size
-    avgWindow_ = max(cmptMax( max(sigma_) ) / max(mag(max(meanField_)), SMALL) * 5.0, this->db().time().deltaTValue() * 5.0);
+    avgWindow_ = max(max(cmptMax( max(sigma_) ), 0) / max(mag(UBulk_), SMALL)  * 5.0, this->db().time().deltaTValue() * 5.0);
 
     reduce( avgWindow_, maxOp<scalar>() );
 
@@ -425,6 +425,7 @@ int SEMBase::numEddies()
 {
     int numSpots = 0;
     const int maxSpots=100000;
+
 
     scalar minLength = GREAT;
     

@@ -67,14 +67,6 @@ void SEMspot::initialise(const bool setToFace )
 
     interpolatePatchToSpot();
 
-    Info<< "Interpolated U = "
-        << u_
-        << endl;
-
-    Info<< "Interpolated sigma = "
-        << sigma_
-        << endl;
-
     vector nn( -u_ );
     nn /= max(mag(nn), SMALL);
     u_=mag(u_)*-nn;

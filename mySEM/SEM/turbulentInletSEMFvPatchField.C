@@ -128,7 +128,16 @@ void turbulentInletSEMFvPatchField::allocateSpots()
     for( int i=0; i<n; i++ ) 
     {
         spot_.append( new SEMspot(this) );
-        spot_.last()->initialise(false);
+        int attempt = 0;
+        do
+        {
+            spot_.last()->initialise(false);
+            attempt += 1;
+        } while(( spot_.last()->R().component(symmTensor::XX)
+                  +spot_.last()->R().component(symmTensor::YY)
+                  +spot_.last()->R().component(symmTensor::ZZ)
+                  < 3.0*pow(0.01*mag(spot_[i]->u()), 2))
+                  && attempt < 10);
     }
 }
 
@@ -149,13 +158,13 @@ void turbulentInletSEMFvPatchField::initilise()
 
     forAll(*this, facei)
     {
-        a_[facei].xx() = sqrt( max( RIn_[facei].xx(), SMALL ) );
+        a_[facei].xx() = sqrt( max( mag(RIn_[facei].xx()), SMALL ) );
         a_[facei].yx() = RIn_[facei].xy()/max( a_[facei].xx(), SMALL );
-        a_[facei].yy() = sqrt( max( RIn_[facei].yy() - pow( a_[facei].yx(), 2), SMALL ));
+        a_[facei].yy() = sqrt( max( mag( RIn_[facei].yy() - pow( a_[facei].yx(), 2) ), SMALL ) );
         a_[facei].zx() = RIn_[facei].xz()/max( a_[facei].xx(), SMALL );
         a_[facei].zy() = (RIn_[facei].yz() - a_[facei].yx()*a_[facei].zx())/max( a_[facei].yy(), SMALL );
-        a_[facei].zz() = 
-            sqrt( max( RIn_[facei].zz() - pow( a_[facei].zx(), 2) - pow( a_[facei].zy(), 2), SMALL));
+        a_[facei].zz() =
+                sqrt( max( mag( RIn_[facei].zz() - pow( a_[facei].zx(), 2) - pow( a_[facei].zy(), 2) ), SMALL ));
     }
 }
 
@@ -176,13 +185,13 @@ void turbulentInletSEMFvPatchField::initiliseRun()
 
     forAll(*this, facei)
     {
-        a_[facei].xx() = sqrt( max( RIn_[facei].xx(), SMALL ) );
+        a_[facei].xx() = sqrt( max( mag(RIn_[facei].xx()), SMALL ) );
         a_[facei].yx() = RIn_[facei].xy()/max( a_[facei].xx(), SMALL );
-        a_[facei].yy() = sqrt( max( RIn_[facei].yy() - pow( a_[facei].yx(), 2), SMALL ));
+        a_[facei].yy() = sqrt( max( mag( RIn_[facei].yy() - pow( a_[facei].yx(), 2) ), SMALL ) );
         a_[facei].zx() = RIn_[facei].xz()/max( a_[facei].xx(), SMALL );
         a_[facei].zy() = (RIn_[facei].yz() - a_[facei].yx()*a_[facei].zx())/max( a_[facei].yy(), SMALL );
         a_[facei].zz() =
-                sqrt( max( RIn_[facei].zz() - pow( a_[facei].zx(), 2) - pow( a_[facei].zy(), 2), SMALL));
+                sqrt( max( mag( RIn_[facei].zz() - pow( a_[facei].zx(), 2) - pow( a_[facei].zy(), 2) ), SMALL ));
     }
 }
 
@@ -214,7 +223,7 @@ void turbulentInletSEMFvPatchField::updateU()
     const vectorField& fc = this->patch().Cf();
 
     Field<vector> fluctuatingField( this->size() );
-    
+
     patchField = vector( 0.0, 0.0, 0.0 );
     fluctuatingField = vector( 0.0, 0.0, 0.0 );
 
@@ -251,12 +260,15 @@ void turbulentInletSEMFvPatchField::updateU()
         fMean2_[facei] = alpha * sum_f2 + (1.0-alpha)*fMean2_[facei]; 
 
         fluctuatingField[facei] /= pow( max(fMean2_[facei], SMALL), 0.5 ) ;
-        
 
         patchField[facei] += a_[facei] & fluctuatingField[facei];
     }
 
+    patchField *= pos0((patchField & this->patch().nf()) - (meanField_ & this->patch().nf()));
+
     patchField += meanField_;
+
+    this->refValue() = patchField;
 
     Info<< "SEM updated U "
         << endl;
@@ -269,7 +281,7 @@ void turbulentInletSEMFvPatchField::write(Ostream& os) const
     SEMBase::write(os);
     fMean2_.writeEntry("fMean2", os);
 }
-    
+
 
 
 turbulentInletSEMFvPatchField::~turbulentInletSEMFvPatchField()

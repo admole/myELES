@@ -47,6 +47,7 @@ SEMspot::SEMspot
     sigma_(spt->sigma_),
     epsilon_(spt->epsilon_),
     u_(spt->u_),
+    R_(spt->R_),
     nearest_(spt->nearest_),
     donorProcN_(spt->donorProcN_),
     residenceTime_(spt->residenceTime_)
@@ -64,10 +65,10 @@ void SEMspot::initialise(const bool setToFace )
     }
     Pstream::scatter( origin_ );
 
-    interpolatePatchToSpot(); 
+    interpolatePatchToSpot();
 
     vector nn( -u_ );
-    nn /= mag(nn);
+    nn /= max(mag(nn), SMALL);
     u_=mag(u_)*-nn;
 
     this->projectBack( nn, setToFace );
@@ -81,11 +82,11 @@ void SEMspot::initialise(const bool setToFace )
 
     if( setToFace )
     {      
-        residenceTime_ = pf_->db().time().value() + 2.0*projectedDist/mag(u_);
+        residenceTime_ = pf_->db().time().value() + 2.0*projectedDist/max(mag(u_), SMALL);
     }
     else
     {
-        residenceTime_ = pf_->db().time().value() + (projectedDist + mag((sigma_&nn)) )/mag(u_);
+        residenceTime_ = pf_->db().time().value() + (projectedDist + mag((sigma_&nn)) )/max(mag(u_), SMALL);
     }
 
     if( Pstream::master() )
@@ -153,20 +154,24 @@ void SEMspot::interpolatePatchToSpot()
     reduce( patchTotArea, sumOp<scalar>() );
 
     UB /= max( patchTotArea, SMALL);
-   
-    u_ = UB;
 
     
     if( donorProcN_ != Pstream::myProcNo() )
     {
-         sigma_ = pTraits<vector>::zero;
+        sigma_ = pTraits<vector>::zero;
+        u_ = pTraits<vector>::zero;
+        R_ = pTraits<symmTensor>::zero;
     }
     else
     {
         sigma_ = pf_->sigma()[nearest_];
+        u_ = pf_->meanField()[nearest_];
+        R_ = pf_->RIn()[nearest_];
     }
  
     reduce( sigma_, maxOp<vector>() );
+    reduce( u_, maxOp<vector>() );
+    reduce( R_, maxOp<symmTensor>() );
 
 }
 

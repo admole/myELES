@@ -22,7 +22,8 @@ Reference. Accuracy and Efficiency Improvements in Synthetic Eddy Methods. A. Sk
 #define SEMBase_H
 
 #include "Random.H"
-#include "fixedValueFvPatchFields.H"
+#include "mixedFvPatchFields.H"
+#include "surfaceFields.H"
 #include "primitivePatchInterpolation.H"
 
 
@@ -40,27 +41,32 @@ class SEMspot;
 
 class SEMBase
 :
-    public fixedValueFvPatchField<vector>
+    public mixedFvPatchField<vector>
 {
     // Protected data
 
 protected:
         word UFieldName_;
+        word UGradFieldName_;
         word EpsFieldName_;
         word RFieldName_;
         Random ranGen_;
         Field<vector> meanField_;
-        label curTimeIndex_; 
+        Field<vector> UGradIn_;
+        label curTimeIndex_;
         boundBox semBox_;
         scalar UBulk_;
         Field<symmTensor> RIn_;
         Field<scalar> epsIn_;
         Field<vector> sigma_;
         bool embedded_;
+        bool inlet_;
+        bool outlet_;
         DynamicList<SEMspot*> spot_;
         scalar avgWindow_;
         scalar maxSigma_;
         Field<scalar> maxDelta_;
+        word phiName_;
 public:
     // Constructors
 
@@ -116,6 +122,11 @@ public:
             Field<vector>& meanField()
             {
                 return meanField_;
+            }
+
+            Field<vector>& UGradIn()
+            {
+                return UGradIn_;
             }
 
             Field<vector>& sigma()
@@ -177,6 +188,10 @@ public:
             //- Write
             virtual void write(Ostream&) const;
 
+
+        // Member operators
+
+            virtual void operator=(const fvPatchField<vector>& pvf);
 
 
 

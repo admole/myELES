@@ -39,20 +39,28 @@ SEMBase::SEMBase
     const DimensionedField<vector, volMesh>& iF
 )
 :
-    fixedValueFvPatchField<vector>(p, iF),
+    mixedFvPatchField<vector>(p, iF),
     UFieldName_(iF.name()),
+    UGradFieldName_(iF.name()),
     EpsFieldName_(iF.name()),
     RFieldName_(iF.name()),
     ranGen_(label(0)),
     meanField_(p.size()),
+    UGradIn_(p.size()),
     curTimeIndex_(-1),
     RIn_(p.size()),
     epsIn_(p.size()),
     sigma_(p.size()),
     maxDelta_(p.size()),
     maxSigma_(0.1),
-    embedded_(0)
+    embedded_(0),
+    inlet_(1),
+    outlet_(0),
+    phiName_("phi")
 {
+    this->refValue() = Zero;
+    this->refGrad() = Zero;
+    this->valueFraction() = 0.0;
 }
 
 
@@ -65,12 +73,14 @@ SEMBase::SEMBase
     const fvPatchFieldMapper& mapper
 )
 :
-    fixedValueFvPatchField<vector>(ptf, p, iF, mapper),
+    mixedFvPatchField<vector>(ptf, p, iF, mapper),
     UFieldName_(iF.name()),
+    UGradFieldName_(iF.name()),
     EpsFieldName_(iF.name()),
     RFieldName_(iF.name()),
     ranGen_(label(0)),
     meanField_(ptf.meanField_, mapper),
+    UGradIn_(ptf.UGradIn_, mapper),
     curTimeIndex_(-1),
     semBox_(ptf.semBox_),
     RIn_(ptf.RIn_, mapper),
@@ -79,7 +89,10 @@ SEMBase::SEMBase
     maxDelta_(ptf.maxDelta_, mapper),
     maxSigma_(ptf.maxSigma_),
     embedded_(ptf.embedded_),
-    avgWindow_(ptf.avgWindow_)
+    inlet_(ptf.inlet_),
+    outlet_(ptf.outlet_),
+    avgWindow_(ptf.avgWindow_),
+    phiName_(ptf.phiName_)
 {
 }
 
@@ -92,12 +105,14 @@ SEMBase::SEMBase
     const dictionary& dict
 )
 :
-    fixedValueFvPatchField<vector>(p, iF),
+    mixedFvPatchField<vector>(p, iF),
     UFieldName_(dict.lookup("UFieldName")),
+    UGradFieldName_(dict.lookup("UGradFieldName")),
     EpsFieldName_(dict.lookup("EpsFieldName")),
     RFieldName_(dict.lookup("RFieldName")),
     ranGen_(label(0)),
     meanField_(p.size()),
+    UGradIn_(p.size()),
     //meanField_(this->db().lookupObject<volVectorField>("UIn")),
     curTimeIndex_(-1),
     semBox_(p.Cf()), 
@@ -107,16 +122,106 @@ SEMBase::SEMBase
     //epsIn_(this->db().lookupObject<volScalarField>("epsIn")),
     sigma_(p.size()),
     embedded_(dict.lookupOrDefault("embedded", true)),
+    inlet_(dict.lookupOrDefault("inlet", true)),
+    outlet_(dict.lookupOrDefault("outlet", false)),
     maxDelta_(p.size()),
-    maxSigma_(dict.lookupOrDefault<scalar>("maxSigma", GREAT))
+    maxSigma_(dict.lookupOrDefault<scalar>("maxSigma", GREAT)),
+    phiName_(dict.lookupOrDefault<word>("phi", "phi"))
 
 {
-    fixedValueFvPatchField<vector>::operator==(vector(0.0, 0.0, 0.0));
 
-    meanField_ = Field<vector>("UIn", dict, p.size());
-    RIn_ = Field<symmTensor>("RIn", dict, p.size());
-    epsIn_ = Field<scalar>("epsIn", dict, p.size());
+    this->patchType() = dict.lookupOrDefault<word>("patchType", word::null);
+
+    this->refValue() = Field<vector>("inletValue", dict, p.size());
+
+    if (dict.found("value"))
+    {
+        fvPatchField<vector>::operator=
+                (
+                        Field<vector>("value", dict, p.size())
+                );
+    }
+    else
+    {
+        fvPatchField<vector>::operator=(this->refValue());
+    }
+
+    this->refGrad() = Zero;
+    this->valueFraction() = 0.0;
+
+
+//    meanField_ = Field<vector>("UIn", dict, p.size());
+//    RIn_ = Field<symmTensor>("RIn", dict, p.size());
+//    epsIn_ = Field<scalar>("epsIn", dict, p.size());
     //sigma_ = Field<vector>("sigma", dict, p.size());
+
+    const fvMesh& mesh_(this->patch().boundaryMesh().mesh());
+
+    const volVectorField Uin
+            (
+                    IOobject
+                            (
+                                    UFieldName_,
+                                    mesh_.time().timeName(),
+                                    mesh_,
+                                    IOobject::MUST_READ,
+                                    IOobject::AUTO_WRITE,
+                                    true // registery
+                            ),
+                    mesh_
+            );
+
+    const volVectorField UGradin
+            (
+                    IOobject
+                            (
+                                    UGradFieldName_,
+                                    mesh_.time().timeName(),
+                                    mesh_,
+                                    IOobject::MUST_READ,
+                                    IOobject::AUTO_WRITE,
+                                    true // registery
+                            ),
+                    mesh_
+            );
+
+    const volSymmTensorField Rin
+            (
+                    IOobject
+                            (
+                                    RFieldName_,
+                                    mesh_.time().timeName(),
+                                    mesh_,
+                                    IOobject::MUST_READ,
+                                    IOobject::AUTO_WRITE,
+                                    true // registery
+                            ),
+                    mesh_
+            );
+
+    const volScalarField Epsin
+            (
+                    IOobject
+                            (
+                                    EpsFieldName_,
+                                    mesh_.time().timeName(),
+                                    mesh_,
+                                    IOobject::MUST_READ,
+                                    IOobject::AUTO_WRITE,
+                                    true // registery
+                            ),
+                    mesh_
+            );
+
+
+    const label patchId = mesh_.boundaryMesh().findPatchID(this->patch().name());
+
+    meanField_ = Uin.boundaryField()[patchId]; //->internalField();
+    UGradIn_ = UGradin.boundaryField()[patchId].snGrad(); //->internalField();
+    epsIn_ = Epsin.boundaryField()[patchId]; //->internalField();
+    RIn_ = Rin.boundaryField()[patchId]; //->internalField();
+
+
 }
 
 
@@ -126,22 +231,27 @@ SEMBase::SEMBase
     const SEMBase& ptf
 )
 :
-    fixedValueFvPatchField<vector>(ptf),
+    mixedFvPatchField<vector>(ptf),
     UFieldName_(ptf.UFieldName_),
+    UGradFieldName_(ptf.UFieldName_),
     EpsFieldName_(ptf.EpsFieldName_),
     RFieldName_(ptf.RFieldName_),
     ranGen_(ptf.ranGen_),
     meanField_(ptf.meanField_),
+    UGradIn_(ptf.UGradIn_),
     curTimeIndex_(-1),
     semBox_(ptf.semBox_), 
     RIn_(ptf.RIn_),
     epsIn_(ptf.epsIn_),
     sigma_(ptf.sigma_),
     embedded_(ptf.embedded_),
+    inlet_(ptf.inlet_),
+    outlet_(ptf.outlet_),
     maxDelta_(ptf.maxDelta_),
     maxSigma_(ptf.maxSigma_),
     spot_(ptf.spot_), 
-    avgWindow_(ptf.avgWindow_)
+    avgWindow_(ptf.avgWindow_),
+    phiName_(ptf.phiName_)
 {
 }
 
@@ -153,12 +263,14 @@ SEMBase::SEMBase
     const DimensionedField<vector, volMesh>& iF
 )
 :
-    fixedValueFvPatchField<vector>(ptf, iF),
+    mixedFvPatchField<vector>(ptf, iF),
     UFieldName_(ptf.UFieldName_),
+    UGradFieldName_(ptf.UFieldName_),
     EpsFieldName_(ptf.EpsFieldName_),
     RFieldName_(ptf.RFieldName_),
     ranGen_(ptf.ranGen_),
     meanField_(ptf.meanField_),
+    UGradIn_(ptf.UGradIn_),
     curTimeIndex_(ptf.curTimeIndex_),
     semBox_(ptf.semBox_),
     UBulk_(ptf.UBulk_),
@@ -166,9 +278,12 @@ SEMBase::SEMBase
     epsIn_(ptf.epsIn_),
     sigma_(ptf.sigma_),
     embedded_(ptf.embedded_),
+    inlet_(ptf.inlet_),
+    outlet_(ptf.outlet_),
     maxDelta_(ptf.maxDelta_),
     maxSigma_(ptf.maxSigma_),
-    avgWindow_(ptf.avgWindow_)
+    avgWindow_(ptf.avgWindow_),
+    phiName_(ptf.phiName_)
 {
 }
 
@@ -177,7 +292,7 @@ SEMBase::SEMBase
 void SEMBase::initilise()
 {
 
-    fixedValueFvPatchField<vector>::operator==(vector(0.0, 0.0, 0.0));
+// FvPatchField<vector>::operator==(vector(0.0, 0.0, 0.0));
 
     if( embedded_ )
     {
@@ -189,15 +304,15 @@ void SEMBase::initilise()
         {
             //const fvMesh& mesh = dimensionedInternalField().mesh();
             const fvMesh &mesh = patch().boundaryMesh().mesh();
-            const label patchId = mesh.boundaryMesh().findPatchID("INLET");
-            const volVectorField &Uin = db().objectRegistry::lookupObject<volVectorField>("UIn");   // TODO: change from UIn to UFieldName
-            const volScalarField &Epsin = db().objectRegistry::lookupObject<volScalarField>("epsIn");
-            const volSymmTensorField &Rin = db().objectRegistry::lookupObject<volSymmTensorField>("RIn");
+            const label patchId = mesh.boundaryMesh().findPatchID(this->patch().name());
+            const volVectorField &Uin = db().objectRegistry::lookupObject<volVectorField>(UFieldName_);
+            const volVectorField &UGradin = db().objectRegistry::lookupObject<volVectorField>(UGradFieldName_);
+            const volScalarField &Epsin = db().objectRegistry::lookupObject<volScalarField>(EpsFieldName_);
+            const volSymmTensorField &Rin = db().objectRegistry::lookupObject<volSymmTensorField>(RFieldName_);
 
             meanField_ = Uin.boundaryField()[patchId]; //->internalField();
-
+            UGradIn_ = UGradin.boundaryField()[patchId].snGrad(); //->internalField();
             epsIn_ = Epsin.boundaryField()[patchId]; //->internalField();
-
             RIn_ = Rin.boundaryField()[patchId]; //->internalField();
 
             Info<< "SEM Reading from RANS "
@@ -244,7 +359,7 @@ void SEMBase::initilise()
             cellEdgeLengths[edgei] = mag( cellEdges[edgei].vec( mesh.points() ) );
         }
 
-        maxDelta_[facei] = Foam::max(cellEdgeLengths);
+        maxDelta_[facei] = max(cellEdgeLengths);
     }
 
     // set length-scales
@@ -258,9 +373,9 @@ void SEMBase::initilise()
         sigma_[facei] =
                 vector
                         (
-                                pow(max(RIn_[facei].xx(), SMALL), 1.5),
-                                pow(max(RIn_[facei].yy(), SMALL), 1.5),
-                                pow(max(RIn_[facei].zz(), SMALL), 1.5)
+                                pow(mag(RIn_[facei].xx()), 1.5),
+                                pow(mag(RIn_[facei].yy()), 1.5),
+                                pow(mag(RIn_[facei].zz()), 1.5)
                         ) *C / epsIn_[facei];
 
         for( int i=0; i<3; i++ )
@@ -289,15 +404,28 @@ void SEMBase::initilise()
 
     Info<< "Set Window "
         << endl;
+
+    Info<< "Max Sigma = "
+        << max(cmptMax( max(sigma_) ), 0)
+        << "  Max U = "
+        << max(mag(UBulk_), SMALL)
+        << endl;
+
     //set averaging window size
-    avgWindow_ = cmptMax( max(sigma_) )/mag(UBulk_) * 5.0;
+    avgWindow_ = max(max(cmptMax( max(sigma_) ), 0) / max(mag(UBulk_), SMALL)  * 5.0, this->db().time().deltaTValue() * 5.0);
+
     reduce( avgWindow_, maxOp<scalar>() );
+
+    Info<< "Window = "
+            << avgWindow_
+            << endl;
 }
 
 int SEMBase::numEddies()
 {
     int numSpots = 0;
-    const int maxSpots=10000;
+    const int maxSpots=100000;
+
 
     scalar minLength = GREAT;
     
@@ -343,8 +471,9 @@ void SEMBase::autoMap
     const fvPatchFieldMapper& m
 )
 {
-    fixedValueFvPatchField<vector>::autoMap(m);
+    mixedFvPatchField<vector>::autoMap(m);
     meanField_.autoMap(m);
+    UGradIn_.autoMap(m);
     RIn_.autoMap(m);
     epsIn_.autoMap(m);
     //sigma_.autoMap(m);
@@ -358,12 +487,13 @@ void SEMBase::rmap
     const labelList& addr
 )
 {
-    fixedValueFvPatchField<vector>::rmap(ptf, addr);
+    mixedFvPatchField<vector>::rmap(ptf, addr);
 
     const SEMBase& tiptf =
         refCast<const SEMBase >(ptf);
 
     meanField_.rmap(tiptf.meanField_, addr);
+    UGradIn_.rmap(tiptf.UGradIn_, addr);
     RIn_.rmap(tiptf.RIn_, addr);
     epsIn_.rmap(tiptf.epsIn_, addr);
     //sigma_.rmap(tiptf.sigma_, addr);
@@ -387,11 +517,18 @@ void SEMBase::advectPoints()
         if(regen)
         {
             scalar origSize = mag( spot_[i]->sigma() );
+            int attempt = 0;
             do
             {
                 spot_[i]->initialise(true);
-            } while( mag( spot_[i]->sigma() ) > 1.1*origSize || mag( spot_[i]->sigma() ) < 0.9*origSize );
-           
+                attempt +=1;
+            } while( (mag( spot_[i]->sigma() ) > 2*origSize
+                    || mag( spot_[i]->sigma() ) < 0.5*origSize)
+                    && (spot_[i]->R().component(symmTensor::XX)
+                        +spot_[i]->R().component(symmTensor::YY)
+                        +spot_[i]->R().component(symmTensor::ZZ)
+                        < 3.0*pow(0.01*mag(spot_[i]->u()), 2))
+                    && attempt < 10);
         }
     }
 }
@@ -420,7 +557,7 @@ void SEMBase::correctMass()
 
     forAll(*this, facei)
     { 
-        (*this)[facei] *= UBulk_/Uc;
+        (*this)[facei] *= mag(UBulk_)/max(mag(Uc), SMALL);
     } 
 }
 
@@ -434,19 +571,53 @@ void SEMBase::updateCoeffs()
         return;
     }
     
-    if (curTimeIndex_ != this->db().time().timeIndex() && this->db().time().value() > 0.005)
+    if (curTimeIndex_ != this->db().time().timeIndex() && this->db().time().value() > this->db().time().deltaTValue())
     {
+        Info<< "SEM inlet / outlet patch = "
+            << this->patch().name()
+            << endl;
 
-        this->advectPoints();            
-   
-        this->updateU(); 
-        
-        this->correctMass(); 
-        
+        this->advectPoints();
+
+        this->updateU();
+
+        this->correctMass();
+
+        this->refGrad() = UGradIn_;
+
+        label patchIndex = this->patch().index();
+        //const label patchId = mesh.boundaryMesh().findPatchID(this->patch().name());
+        const surfaceScalarField & phi = this->db().objectRegistry::lookupObject<surfaceScalarField>(phiName_);
+        const scalarField & phip = phi.boundaryField()[patchIndex];
+
+        if (inlet_ && outlet_)
+        {
+            //this->valueFraction() = 1.0 - pos0(phip);
+            this->valueFraction() = 1.0 - pos0(meanField_ & this->patch().nf());
+            Info<< "value fraction = "
+                << this->valueFraction()
+                << endl;
+
+        }
+        else if (inlet_)
+        {
+            this->valueFraction() = 1.0;
+        }
+        else if (outlet_)
+        {
+            this->valueFraction() = 0.0;
+        }
+        else
+        {
+            Info<< "WARNING: Both inlet and outlet switched off - defaulting to inlet/outlet"
+                << endl;
+            this->valueFraction() = 1.0 - pos0(phip);
+        }
+
         curTimeIndex_ = this->db().time().timeIndex();
     }
 
-    fixedValueFvPatchField<vector>::updateCoeffs();
+    mixedFvPatchField<vector>::updateCoeffs();
 
 }
 
@@ -459,10 +630,15 @@ void SEMBase::write(Ostream& os) const
 {
     fvPatchField<vector>::write(os);
     os.writeKeyword("embedded") << embedded_ << token::END_STATEMENT << nl;
+    os.writeKeyword("inlet") << inlet_ << token::END_STATEMENT << nl;
+    os.writeKeyword("outlet") << outlet_ << token::END_STATEMENT << nl;
     os.writeKeyword("maxSigma") << maxSigma_ << token::END_STATEMENT << nl;
     os.writeKeyword("UFieldName") << UFieldName_ << token::END_STATEMENT << nl;
+    os.writeKeyword("UGradFieldName") << UGradFieldName_ << token::END_STATEMENT << nl;
     os.writeKeyword("EpsFieldName") << EpsFieldName_ << token::END_STATEMENT << nl;
     os.writeKeyword("RFieldName") << RFieldName_ << token::END_STATEMENT << nl;
+    os.writeEntryIfDifferent<word>("phi", "phi", phiName_);
+    this->refValue().writeEntry("inletValue", os);
 
     this->writeEntry("value", os);
 
@@ -471,6 +647,26 @@ void SEMBase::write(Ostream& os) const
     //epsIn_.writeEntry("epsIn", os);
     //sigma_.writeEntry("sigma", os);
 }
+
+// * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
+
+    // template<class Type>
+
+    void SEMBase::operator=
+            (
+                    const fvPatchField<vector>& ptf
+            )
+    {
+        fvPatchField<vector>::operator=
+                (
+                        this->valueFraction()*this->refValue()
+                        + (1 - this->valueFraction())*ptf
+                );
+    }
+
+
+// ************************************************************************* //
+
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

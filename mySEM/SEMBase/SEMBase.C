@@ -53,6 +53,7 @@ SEMBase::SEMBase
     sigma_(p.size()),
     maxDelta_(p.size()),
     maxSigma_(0.1),
+    Cr_(1.0),
     embedded_(0),
     inlet_(1),
     outlet_(0),
@@ -88,6 +89,7 @@ SEMBase::SEMBase
     sigma_(ptf.sigma_, mapper),
     maxDelta_(ptf.maxDelta_, mapper),
     maxSigma_(ptf.maxSigma_),
+    Cr_(ptf.Cr_),
     embedded_(ptf.embedded_),
     inlet_(ptf.inlet_),
     outlet_(ptf.outlet_),
@@ -126,6 +128,7 @@ SEMBase::SEMBase
     outlet_(dict.lookupOrDefault("outlet", false)),
     maxDelta_(p.size()),
     maxSigma_(dict.lookupOrDefault<scalar>("maxSigma", GREAT)),
+    Cr_(dict.lookupOrDefault<scalar>("Cr", 1)),
     phiName_(dict.lookupOrDefault<word>("phi", "phi"))
 
 {
@@ -249,7 +252,8 @@ SEMBase::SEMBase
     outlet_(ptf.outlet_),
     maxDelta_(ptf.maxDelta_),
     maxSigma_(ptf.maxSigma_),
-    spot_(ptf.spot_), 
+    Cr_(ptf.Cr_),
+    spot_(ptf.spot_),
     avgWindow_(ptf.avgWindow_),
     phiName_(ptf.phiName_)
 {
@@ -282,6 +286,7 @@ SEMBase::SEMBase
     outlet_(ptf.outlet_),
     maxDelta_(ptf.maxDelta_),
     maxSigma_(ptf.maxSigma_),
+    Cr_(ptf.Cr_),
     avgWindow_(ptf.avgWindow_),
     phiName_(ptf.phiName_)
 {
@@ -633,6 +638,7 @@ void SEMBase::write(Ostream& os) const
     os.writeKeyword("inlet") << inlet_ << token::END_STATEMENT << nl;
     os.writeKeyword("outlet") << outlet_ << token::END_STATEMENT << nl;
     os.writeKeyword("maxSigma") << maxSigma_ << token::END_STATEMENT << nl;
+    os.writeKeyword("Cr") << Cr_ << token::END_STATEMENT << nl;
     os.writeKeyword("UFieldName") << UFieldName_ << token::END_STATEMENT << nl;
     os.writeKeyword("UGradFieldName") << UGradFieldName_ << token::END_STATEMENT << nl;
     os.writeKeyword("EpsFieldName") << EpsFieldName_ << token::END_STATEMENT << nl;

@@ -261,7 +261,7 @@ void turbulentInletSEMFvPatchField::updateU()
 
         fluctuatingField[facei] /= pow( max(fMean2_[facei], SMALL), 0.5 ) ;
 
-        patchField[facei] += a_[facei] & fluctuatingField[facei];
+        patchField[facei] += Cr_ * a_[facei] & fluctuatingField[facei];
     }
 
     patchField *= pos0((patchField & this->patch().nf()) - (meanField_ & this->patch().nf()));

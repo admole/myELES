@@ -1,4 +1,5 @@
 VelocityDrift.C
 kDrift.C
+RDrift.C
 
 LIB = $(FOAM_USER_LIBBIN)/libMyDrifts

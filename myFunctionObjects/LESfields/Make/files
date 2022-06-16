@@ -1,0 +1,4 @@
+epsilon/epsilonLES.C
+omega/omegaLES.C
+
+LIB = $(FOAM_USER_LIBBIN)/libLESfields

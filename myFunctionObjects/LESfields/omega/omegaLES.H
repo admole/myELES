@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::functionObjects::Q
+    Foam::functionObjects::omegaLES
 
 Group
     grpFieldFunctionObjects
@@ -32,7 +32,7 @@ Description
     [1/s^2].
 
     \f[
-        Q = 0.5(sqr(tr(\nabla U)) - tr(((\nabla U) \cdot (\nabla U))))
+        omegaLES = 0.5(sqr(tr(\nabla U)) - tr(((\nabla U) \cdot (\nabla U))))
     \f]
 
     where
@@ -41,11 +41,11 @@ Description
     \endvartable
 
 Usage
-    Example of function object specification to calculate Q:
+    Example of function object specification to calculate omegaLES:
     \verbatim
-    Q1
+    omegaLES1
     {
-        type        Q;
+        type        omegaLES;
         libs        ("libfieldFunctionObjects.so");
         ...
     }
@@ -54,9 +54,9 @@ Usage
     Where the entries comprise:
     \table
         Property     | Description             | Required    | Default value
-        type         | type name: Q            | yes         |
+        type         | type name: omegaLES            | yes         |
         U            | Name of velocity field  | no          | U
-        result       | Name of Q field         | no          | \<function name\>
+        result       | Name of omegaLES field         | no          | \<function name\>
         log          | Log to standard output  | no          | yes
     \endtable
 
@@ -65,14 +65,15 @@ See also
     Foam::functionObjects::fvMeshFunctionObject
 
 SourceFiles
-    Q.C
+    omegaLES.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_Q_H
-#define functionObjects_Q_H
+#ifndef functionObjects_omegaLES_H
+#define functionObjects_omegaLES_H
 
 #include "fieldExpression.H"
+#include "turbulenceModel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -82,29 +83,29 @@ namespace functionObjects
 {
 
 /*---------------------------------------------------------------------------*\
-                          Class Q Declaration
+                          Class omegaLES Declaration
 \*---------------------------------------------------------------------------*/
 
-class Q
+class omegaLES
 :
     public fieldExpression
 {
     // Private Member Functions
 
-        //- Calculate the Q field and return true if successful
+        //- Calculate the omegaLES field and return true if successful
         virtual bool calc();
 
 
 public:
 
     //- Runtime type information
-    TypeName("Q");
+    TypeName("omegaLES");
 
 
     // Constructors
 
         //- Construct from Time and dictionary
-        Q
+        omegaLES
         (
             const word& name,
             const Time& runTime,
@@ -113,7 +114,7 @@ public:
 
 
     //- Destructor
-    virtual ~Q();
+    virtual ~omegaLES();
 };
 
 

@@ -23,7 +23,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "Q.H"
+#include "epsilonLES.H"
 #include "fvcGrad.H"
 #include "addToRunTimeSelectionTable.H"
 
@@ -33,12 +33,12 @@ namespace Foam
 {
 namespace functionObjects
 {
-    defineTypeNameAndDebug(Q, 0);
+    defineTypeNameAndDebug(epsilonLES, 0);
 
     addToRunTimeSelectionTable
     (
         functionObject,
-        Q,
+        epsilonLES,
         dictionary
     );
 }
@@ -47,18 +47,21 @@ namespace functionObjects
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-bool Foam::functionObjects::Q::calc()
+bool Foam::functionObjects::epsilonLES::calc()
 {
     if (foundObject<volVectorField>(fieldName_))
     {
         const volVectorField& U = lookupObject<volVectorField>(fieldName_);
-        const tmp<volTensorField> tgradU(fvc::grad(U));
-        const volTensorField& gradU = tgradU();
+        const volSymmTensorField& Sij_ = 0.50*twoSymm(fvc::grad(U));
+        const volSymmTensorField& tauij_SGS = mesh_.lookupObject<volSymmTensorField>("R");
+        const dictionary& transportProperties =
+                lookupObject<dictionary>("transportProperties");
+        const dimensionedScalar nu("nu", dimViscosity, transportProperties);
 
         return store
         (
             resultName_,
-            0.5*(sqr(tr(gradU)) - tr(((gradU) & (gradU))))
+            2.0 * nu * (Sij_ && Sij_) - (tauij_SGS && Sij_)
         );
     }
     else
@@ -70,7 +73,7 @@ bool Foam::functionObjects::Q::calc()
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::functionObjects::Q::Q
+Foam::functionObjects::epsilonLES::epsilonLES
 (
     const word& name,
     const Time& runTime,
@@ -85,7 +88,7 @@ Foam::functionObjects::Q::Q
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
-Foam::functionObjects::Q::~Q()
+Foam::functionObjects::epsilonLES::~epsilonLES()
 {}
 
 

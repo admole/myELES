@@ -65,6 +65,7 @@ protected:
         DynamicList<SEMspot*> spot_;
         scalar avgWindow_;
         scalar maxSigma_;
+        scalar CSigma_;
         scalar Cr_;
         Field<scalar> maxDelta_;
         word phiName_;

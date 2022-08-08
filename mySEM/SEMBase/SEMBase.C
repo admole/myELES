@@ -53,6 +53,7 @@ SEMBase::SEMBase
     sigma_(p.size()),
     maxDelta_(p.size()),
     maxSigma_(0.1),
+    CSigma_(1.0),
     Cr_(1.0),
     embedded_(0),
     inlet_(1),
@@ -89,6 +90,7 @@ SEMBase::SEMBase
     sigma_(ptf.sigma_, mapper),
     maxDelta_(ptf.maxDelta_, mapper),
     maxSigma_(ptf.maxSigma_),
+    CSigma_(ptf.CSigma_),
     Cr_(ptf.Cr_),
     embedded_(ptf.embedded_),
     inlet_(ptf.inlet_),
@@ -128,6 +130,7 @@ SEMBase::SEMBase
     outlet_(dict.lookupOrDefault("outlet", false)),
     maxDelta_(p.size()),
     maxSigma_(dict.lookupOrDefault<scalar>("maxSigma", GREAT)),
+    CSigma_(dict.lookupOrDefault<scalar>("CSigma", 1)),
     Cr_(dict.lookupOrDefault<scalar>("Cr", 1)),
     phiName_(dict.lookupOrDefault<word>("phi", "phi"))
 
@@ -252,6 +255,7 @@ SEMBase::SEMBase
     outlet_(ptf.outlet_),
     maxDelta_(ptf.maxDelta_),
     maxSigma_(ptf.maxSigma_),
+    CSigma_(ptf.CSigma_),
     Cr_(ptf.Cr_),
     spot_(ptf.spot_),
     avgWindow_(ptf.avgWindow_),
@@ -286,6 +290,7 @@ SEMBase::SEMBase
     outlet_(ptf.outlet_),
     maxDelta_(ptf.maxDelta_),
     maxSigma_(ptf.maxSigma_),
+    CSigma_(ptf.CSigma_),
     Cr_(ptf.Cr_),
     avgWindow_(ptf.avgWindow_),
     phiName_(ptf.phiName_)
@@ -381,7 +386,7 @@ void SEMBase::initilise()
                                 pow(mag(RIn_[facei].xx()), 1.5),
                                 pow(mag(RIn_[facei].yy()), 1.5),
                                 pow(mag(RIn_[facei].zz()), 1.5)
-                        ) *C / epsIn_[facei];
+                        ) *C*CSigma_ / epsIn_[facei];
 
         for( int i=0; i<3; i++ )
         {
@@ -638,6 +643,7 @@ void SEMBase::write(Ostream& os) const
     os.writeKeyword("inlet") << inlet_ << token::END_STATEMENT << nl;
     os.writeKeyword("outlet") << outlet_ << token::END_STATEMENT << nl;
     os.writeKeyword("maxSigma") << maxSigma_ << token::END_STATEMENT << nl;
+    os.writeKeyword("CSigma") << CSigma_ << token::END_STATEMENT << nl;
     os.writeKeyword("Cr") << Cr_ << token::END_STATEMENT << nl;
     os.writeKeyword("UFieldName") << UFieldName_ << token::END_STATEMENT << nl;
     os.writeKeyword("UGradFieldName") << UGradFieldName_ << token::END_STATEMENT << nl;

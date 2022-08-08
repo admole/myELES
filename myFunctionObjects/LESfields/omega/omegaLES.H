@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::functionObjects::epsilonLES
+    Foam::functionObjects::omegaLES
 
 Group
     grpFieldFunctionObjects
@@ -32,7 +32,7 @@ Description
     [1/s^2].
 
     \f[
-        epsilonLES = 0.5(sqr(tr(\nabla U)) - tr(((\nabla U) \cdot (\nabla U))))
+        omegaLES = 0.5(sqr(tr(\nabla U)) - tr(((\nabla U) \cdot (\nabla U))))
     \f]
 
     where
@@ -41,11 +41,11 @@ Description
     \endvartable
 
 Usage
-    Example of function object specification to calculate epsilonLES:
+    Example of function object specification to calculate omegaLES:
     \verbatim
-    epsilonLES1
+    omegaLES1
     {
-        type        epsilonLES;
+        type        omegaLES;
         libs        ("libfieldFunctionObjects.so");
         ...
     }
@@ -54,9 +54,9 @@ Usage
     Where the entries comprise:
     \table
         Property     | Description             | Required    | Default value
-        type         | type name: epsilonLES            | yes         |
+        type         | type name: omegaLES            | yes         |
         U            | Name of velocity field  | no          | U
-        result       | Name of epsilonLES field         | no          | \<function name\>
+        result       | Name of omegaLES field         | no          | \<function name\>
         log          | Log to standard output  | no          | yes
     \endtable
 
@@ -65,12 +65,12 @@ See also
     Foam::functionObjects::fvMeshFunctionObject
 
 SourceFiles
-    epsilonLES.C
+    omegaLES.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef functionObjects_epsilonLES_H
-#define functionObjects_epsilonLES_H
+#ifndef functionObjects_omegaLES_H
+#define functionObjects_omegaLES_H
 
 #include "fieldExpression.H"
 #include "turbulenceModel.H"
@@ -83,28 +83,29 @@ namespace functionObjects
 {
 
 /*---------------------------------------------------------------------------*\
-                          Class epsilonLES Declaration
+                          Class omegaLES Declaration
 \*---------------------------------------------------------------------------*/
 
-class epsilonLES
+class omegaLES
 :
     public fieldExpression
 {
     // Private Member Functions
 
-        //- Calculate the epsilonLES field and return true if successful
+        //- Calculate the omegaLES field and return true if successful
         virtual bool calc();
 
 
 public:
 
     //- Runtime type information
-    TypeName("epsilonLES");
+    TypeName("omegaLES");
+
 
     // Constructors
 
         //- Construct from Time and dictionary
-        epsilonLES
+        omegaLES
         (
             const word& name,
             const Time& runTime,
@@ -113,7 +114,7 @@ public:
 
 
     //- Destructor
-    virtual ~epsilonLES();
+    virtual ~omegaLES();
 };
 
 

@@ -23,7 +23,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "epsilonLES.H"
+#include "omegaLES.H"
 #include "fvcGrad.H"
 #include "addToRunTimeSelectionTable.H"
 
@@ -33,12 +33,12 @@ namespace Foam
 {
 namespace functionObjects
 {
-    defineTypeNameAndDebug(epsilonLES, 0);
+    defineTypeNameAndDebug(omegaLES, 0);
 
     addToRunTimeSelectionTable
     (
         functionObject,
-        epsilonLES,
+        omegaLES,
         dictionary
     );
 }
@@ -47,21 +47,17 @@ namespace functionObjects
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-bool Foam::functionObjects::epsilonLES::calc()
+bool Foam::functionObjects::omegaLES::calc()
 {
     if (foundObject<volVectorField>(fieldName_))
     {
         const volVectorField& U = lookupObject<volVectorField>(fieldName_);
         const volSymmTensorField& Sij_ = 0.50*twoSymm(fvc::grad(U));
-        const volSymmTensorField& tauij_SGS = mesh_.lookupObject<volSymmTensorField>("R");
-        const dictionary& transportProperties =
-                lookupObject<dictionary>("transportProperties");
-        const dimensionedScalar nu("nu", dimViscosity, transportProperties);
 
         return store
         (
             resultName_,
-            2.0 * nu * (Sij_ && Sij_) - (tauij_SGS && Sij_)
+            (1/pow(0.09,0.5)) * pow(2.00 * (Sij_ && Sij_),0.5)
         );
     }
     else
@@ -73,7 +69,7 @@ bool Foam::functionObjects::epsilonLES::calc()
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::functionObjects::epsilonLES::epsilonLES
+Foam::functionObjects::omegaLES::omegaLES
 (
     const word& name,
     const Time& runTime,
@@ -88,7 +84,7 @@ Foam::functionObjects::epsilonLES::epsilonLES
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
-Foam::functionObjects::epsilonLES::~epsilonLES()
+Foam::functionObjects::omegaLES::~omegaLES()
 {}
 
 
